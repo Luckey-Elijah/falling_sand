@@ -33,13 +33,11 @@ class FallingSand extends StatefulWidget {
 class _FallingSandState extends State<FallingSand>
     with SingleTickerProviderStateMixin {
   late final Ticker ticker;
-  late final TickerFuture tickerFuture;
 
   @override
   void initState() {
     super.initState();
-    ticker = createTicker(tick);
-    tickerFuture = ticker.start();
+    ticker = createTicker(tick)..start();
   }
 
   @override
@@ -48,11 +46,7 @@ class _FallingSandState extends State<FallingSand>
     super.dispose();
   }
 
-  var delta = const Duration();
-
   void tick(Duration duration) {
-    if ((delta += duration) < const Duration(milliseconds: 50)) return;
-    delta = const Duration();
     // iterate over the board and move every cell down if it is not at the bottom
     for (var col = 0; col < widget.width; col++) {
       for (var row = widget.height - 1; row >= 0; row--) {
