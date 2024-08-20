@@ -49,11 +49,10 @@ class _FallingSandState extends State<FallingSand>
     // iterate over the board and move every cell down if it is not at the bottom
     for (var col = 0; col < widget.width; col++) {
       for (var row = widget.height - 1; row >= 0; row--) {
-        //
         var value = state[col][row];
         if (value != null) {
-          var canMoveDown =
-              row + 1 < widget.height && state[col][row + 1] == null;
+          var canMoveDown = row + 1 < widget.height && //
+              state[col][row + 1] == null;
 
           if (canMoveDown) {
             setState(() {
@@ -87,7 +86,7 @@ class _FallingSandState extends State<FallingSand>
     x = min(x, widget.width - 1);
     y = min(y, widget.height - 1);
 
-    if (state[x][y] == color) return;
+    if (state[x][y] != null) return;
 
     setState(() => state[x][y] = color);
   }
@@ -127,11 +126,11 @@ class _FallingSandState extends State<FallingSand>
                 color: Colors.black,
                 onPressed: () => setState(() => color = Colors.black),
               ),
-              for (final primaryColor in Colors.primaries)
+              for (var i = 0; i < Colors.primaries.length; i++)
                 IconButton(
                   icon: const Icon(Icons.square),
-                  color: primaryColor,
-                  onPressed: () => setState(() => color = primaryColor),
+                  color: Colors.primaries[i],
+                  onPressed: () => setState(() => color = Colors.primaries[i]),
                 ),
             ],
           ),
