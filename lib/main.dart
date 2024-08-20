@@ -3,6 +3,121 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 
+// https://en.wikipedia.org/wiki/Tetromino
+const tetromino = [
+  // t tetromino
+  [
+    [true, true, true],
+    [false, true, false],
+  ],
+  // square tetromino
+  [
+    [true, true],
+    [true, true],
+  ],
+  // skew tetromino
+  [
+    [false, true, true],
+    [true, true, false],
+  ],
+  // straight tetromino
+  [
+    [true, true, true, true],
+  ],
+  // L-tetromino
+  [
+    [true, false],
+    [true, false],
+    [true, false],
+    [true, true],
+  ],
+  // reverse L-tetromino
+  [
+    [false, true],
+    [false, true],
+    [true, true],
+    [true, false],
+  ],
+  // J-tetromino
+  [
+    [true, false, false],
+    [true, true, true],
+  ],
+  // reverse J-tetromino
+  [
+    [false, false, true],
+    [true, true, true],
+  ],
+  // S-tetromino
+  [
+    [false, true, true],
+    [true, true, false],
+  ],
+  // reverse S-tetromino
+  [
+    [true, true, false],
+    [false, true, true],
+  ],
+  // Z-tetromino
+  [
+    [true, true, false],
+    [false, true, true],
+  ],
+  // reverse Z-tetromino
+  [
+    [false, true, true],
+    [true, true, false],
+  ],
+  // I-tetromino (vertical)
+  [
+    [true],
+    [true],
+    [true],
+    [true],
+  ],
+  // I-tetromino (horizontal)
+  [
+    [true, true, true, true],
+  ],
+  // T-tetromino (rotated)
+  [
+    [false, true],
+    [true, true, true],
+  ],
+  // T-tetromino (rotated reverse)
+  [
+    [true, true, true],
+    [false, true],
+  ],
+  // L-tetromino (rotated)
+  [
+    [true, true],
+    [true, false],
+    [true, false],
+  ],
+  // reverse L-tetromino (rotated)
+  [
+    [false, true],
+    [false, true],
+    [true, true],
+  ],
+  // square tetromino (rotated)
+  [
+    [true, true],
+    [true, true],
+  ],
+  // skew tetromino (rotated)
+  [
+    [true, true, false],
+    [false, true, true],
+  ],
+  // reverse skew tetromino
+  [
+    [false, true, true],
+    [true, true, false],
+  ],
+];
+
 void main() => runApp(const App());
 
 class App extends StatelessWidget {
@@ -32,6 +147,7 @@ class FallingSand extends StatefulWidget {
 class _FallingSandState extends State<FallingSand>
     with SingleTickerProviderStateMixin {
   late final Ticker ticker;
+  late final rng = Random();
 
   @override
   void initState() {
@@ -81,12 +197,20 @@ class _FallingSandState extends State<FallingSand>
     var x = max(0, offset.dx) ~/ cellSize.width;
     var y = max(0, offset.dy) ~/ cellSize.height;
 
-    x = min(x, widget.width - 1);
-    y = min(y, widget.height - 1);
+    final tetrominoIndex = rng.nextInt(tetromino.length);
 
-    if (state[x][y] == 1) return;
+    for (final (i, shape) in tetromino[tetrominoIndex].indexed) {
+      for (final (j, pixel) in shape.indexed) {
+        if (!pixel) return;
 
-    setState(() => state[x][y] = 1);
+        x = min(x + j, widget.width - 1);
+        y = min(y + i, widget.height - 1);
+
+        if (state[x][y] == 1) continue;
+
+        setState(() => state[x][y] = 1);
+      }
+    }
   }
 
   @override
