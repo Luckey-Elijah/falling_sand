@@ -210,7 +210,7 @@ class _FallingSandState extends State<FallingSand>
 
         if (state[x][y] != null) continue;
 
-        setState(() => state[x][y] = 1);
+        setState(() => state[x][y] = color);
       }
     }
   }
