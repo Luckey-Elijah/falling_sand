@@ -68,12 +68,7 @@ class _FallingSandState extends State<FallingSand>
   late var state = emptyState();
 
   List<List<int>> emptyState() => List.generate(
-        widget.width,
-        (i) => List.generate(
-          widget.height,
-          (j) => 0,
-        ),
-      );
+      widget.width, (i) => List.generate(widget.height, (j) => 0));
 
   final size = const Size.square(1000);
 
