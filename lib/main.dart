@@ -41,8 +41,13 @@ class _FallingSandState extends State<FallingSand>
     tickerFuture = ticker.start();
   }
 
-  // ignore: prefer_const_constructors
-  var delta = Duration();
+  @override
+  void dispose() {
+    ticker.dispose();
+    super.dispose();
+  }
+
+  var delta = const Duration();
 
   final width = 50;
   final height = 50;
@@ -124,40 +129,31 @@ class _FallingSandState extends State<FallingSand>
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text('$position:\t$prevXPos,\t$prevYPos'),
-        ConstrainedBox(
-          constraints: BoxConstraints.tight(size),
-          child: DecoratedBox(
-            decoration: BoxDecoration(border: Border.all()),
-            child: Listener(
-              child: CustomPaint(
-                size: size,
-                painter: FallingSandPainter(state),
-              ),
-              onPointerHover: (event) {
-                positionToCellUpdate(event.localPosition, 2);
-              },
-              onPointerMove: (event) {
-                positionToCellUpdate(event.localPosition, 1, true);
-              },
-              onPointerDown: (event) {
-                positionToCellUpdate(event.localPosition, 1, true);
-              },
-              onPointerUp: (event) {
-                positionToCellUpdate(event.localPosition, 2);
-              },
+    return Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints.tight(size),
+        child: DecoratedBox(
+          decoration: BoxDecoration(border: Border.all()),
+          child: Listener(
+            child: CustomPaint(
+              size: size,
+              painter: FallingSandPainter(state),
             ),
+            onPointerHover: (event) {
+              positionToCellUpdate(event.localPosition, 2);
+            },
+            onPointerMove: (event) {
+              positionToCellUpdate(event.localPosition, 1, true);
+            },
+            onPointerDown: (event) {
+              positionToCellUpdate(event.localPosition, 1, true);
+            },
+            onPointerUp: (event) {
+              positionToCellUpdate(event.localPosition, 2);
+            },
           ),
         ),
-        TextButton.icon(
-          onPressed: () => setState(() => state = emptyState()),
-          icon: const Icon(Icons.clear),
-          label: const Text('Clear'),
-        )
-      ],
+      ),
     );
   }
 }
