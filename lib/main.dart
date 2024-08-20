@@ -52,7 +52,8 @@ class _FallingSandState extends State<FallingSand>
 
     // iterate over the board and move every cell down if it is not at the bottom
     for (var col = 0; col < width; col++) {
-      for (var row = 0; row < height; row++) {
+      for (var row = height - 1; row >= 0; row--) {
+        //
         var value = state[col][row];
         if (value == 1) {
           var canMoveDown = row + 1 < height && state[col][row + 1] != 1;
