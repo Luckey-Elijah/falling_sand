@@ -1,33 +1,34 @@
 import 'dart:math';
 
-import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 
-void main() {
-  runApp(const App());
-}
+void main() => runApp(const App());
 
 class App extends StatelessWidget {
   const App({super.key});
 
   @override
-  Widget build(BuildContext context) => const MaterialApp(
-        debugShowCheckedModeBanner: false,
-        home: Material(
-          child: FallingSand(),
+  Widget build(BuildContext context) {
+    return const MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Material(
+        child: FallingSand(
+          height: 50,
+          width: 50,
         ),
-      );
+      ),
+    );
+  }
 }
 
 class FallingSand extends StatefulWidget {
-  const FallingSand({super.key});
+  const FallingSand({super.key, required this.width, required this.height});
+  final int width, height;
 
   @override
   State<FallingSand> createState() => _FallingSandState();
 }
-
-const equality = ListEquality<List<int>>(ListEquality<int>());
 
 class _FallingSandState extends State<FallingSand>
     with SingleTickerProviderStateMixin {
@@ -121,6 +122,7 @@ class _FallingSandState extends State<FallingSand>
       prevXPos = x;
       prevYPos = y;
     }
+
     setState(() {
       position = offset;
       state[x][y] = create ? 1 : value;
@@ -178,12 +180,20 @@ class FallingSandPainter extends CustomPainter {
           canvas.drawRect(Offset(col * divisionX, row * divisionY) & cellSize,
               paint..color = Colors.black);
         }
+        if (state[col][row] == 2) {
+          canvas.drawRect(Offset(col * divisionX, row * divisionY) & cellSize,
+              paint..color = Colors.green);
+        }
+        if (state[col][row] == 3) {
+          canvas.drawRect(Offset(col * divisionX, row * divisionY) & cellSize,
+              paint..color = Colors.red);
+        }
       }
     }
   }
 
   @override
   bool shouldRepaint(FallingSandPainter oldDelegate) {
-    return !equality.equals(oldDelegate.state, state);
+    return true;
   }
 }
