@@ -50,19 +50,16 @@ class _FallingSandState extends State<FallingSand>
 
   var delta = const Duration();
 
-  final width = 50;
-  final height = 50;
-
   void tick(Duration duration) {
     if ((delta += duration) < const Duration(milliseconds: 50)) return;
-
+    delta = const Duration();
     // iterate over the board and move every cell down if it is not at the bottom
-    for (var col = 0; col < width; col++) {
-      for (var row = height - 1; row >= 0; row--) {
+    for (var col = 0; col < widget.width; col++) {
+      for (var row = widget.height - 1; row >= 0; row--) {
         //
         var value = state[col][row];
         if (value == 1) {
-          var canMoveDown = row + 1 < height && state[col][row + 1] != 1;
+          var canMoveDown = row + 1 < widget.height && state[col][row + 1] != 1;
 
           if (canMoveDown) {
             setState(() {
@@ -78,82 +75,61 @@ class _FallingSandState extends State<FallingSand>
   late var state = emptyState();
 
   List<List<int>> emptyState() => List.generate(
-        width,
+        widget.width,
         (i) => List.generate(
-          height,
-          (j) => i == 0 && j == 0 ? 1 : 0,
+          widget.height,
+          (j) => 0,
         ),
       );
 
   final size = const Size.square(1000);
 
-  Offset? position;
-  int? prevXPos;
-  int? prevYPos;
-  int? prevVal;
+  late final cellSize = Size(
+    size.width / widget.width,
+    size.height / widget.height,
+  );
 
-  void positionToCellUpdate(
-    Offset offset,
-    int value, [
-    bool create = false,
-  ]) {
-    final cellSize = Size(size.width / width, size.height / height);
-
+  void positionToCellUpdate(Offset offset) {
     var x = max(0, offset.dx) ~/ cellSize.width;
     var y = max(0, offset.dy) ~/ cellSize.height;
 
-    x = min(x, width - 1);
-    y = min(y, width - 1);
+    x = min(x, widget.width - 1);
+    y = min(y, widget.height - 1);
 
-    if (state[x][y] == value) return;
+    if (state[x][y] == 1) return;
 
-    if (prevXPos != null && prevYPos != null && prevVal != null) {
-      // restore last state
-      state[prevXPos!][prevYPos!] = prevVal!;
-      prevXPos = null;
-      prevYPos = null;
-      prevVal = null;
-    }
-
-    // grab state before mutating
-
-    if (!create) {
-      prevVal = state[x][y];
-      prevXPos = x;
-      prevYPos = y;
-    }
-
-    setState(() {
-      position = offset;
-      state[x][y] = create ? 1 : value;
-    });
+    setState(() => state[x][y] = 1);
   }
 
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: ConstrainedBox(
+      child: Container(
         constraints: BoxConstraints.tight(size),
-        child: DecoratedBox(
-          decoration: BoxDecoration(border: Border.all()),
-          child: Listener(
-            child: CustomPaint(
-              size: size,
-              painter: FallingSandPainter(state),
+        decoration: BoxDecoration(border: Border.all()),
+        child: Stack(
+          children: [
+            Listener(
+              child: CustomPaint(
+                size: size,
+                painter: FallingSandPainter(state),
+              ),
+              onPointerHover: (event) =>
+                  positionToCellUpdate(event.localPosition),
+              onPointerMove: (event) =>
+                  positionToCellUpdate(event.localPosition),
+              onPointerDown: (event) =>
+                  positionToCellUpdate(event.localPosition),
+              onPointerUp: (event) => positionToCellUpdate(event.localPosition),
             ),
-            onPointerHover: (event) {
-              positionToCellUpdate(event.localPosition, 2);
-            },
-            onPointerMove: (event) {
-              positionToCellUpdate(event.localPosition, 1, true);
-            },
-            onPointerDown: (event) {
-              positionToCellUpdate(event.localPosition, 1, true);
-            },
-            onPointerUp: (event) {
-              positionToCellUpdate(event.localPosition, 2);
-            },
-          ),
+            Align(
+              alignment: Alignment.topRight,
+              child: IconButton(
+                icon: const Icon(Icons.clear),
+                onPressed: () => setState(() => state = emptyState()),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -166,27 +142,21 @@ class FallingSandPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..strokeCap = StrokeCap.square;
+    final paint = Paint()..color = Colors.black;
 
     final width = state.length;
     final height = state[0].length;
     final divisionX = size.width / width;
     final divisionY = size.height / height;
-    final cellSize = Size(divisionX, divisionY);
+
+    // add 1 to account for ghost lines
+    final cellSize = Size(divisionX + 1, divisionY + 1);
 
     for (var col = 0; col < width; col++) {
       for (var row = 0; row < height; row++) {
         if (state[col][row] == 1) {
-          canvas.drawRect(Offset(col * divisionX, row * divisionY) & cellSize,
-              paint..color = Colors.black);
-        }
-        if (state[col][row] == 2) {
-          canvas.drawRect(Offset(col * divisionX, row * divisionY) & cellSize,
-              paint..color = Colors.green);
-        }
-        if (state[col][row] == 3) {
-          canvas.drawRect(Offset(col * divisionX, row * divisionY) & cellSize,
-              paint..color = Colors.red);
+          Rect rect = Offset(col * divisionX, row * divisionY) & cellSize;
+          canvas.drawRect(rect, paint);
         }
       }
     }
