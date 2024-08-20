@@ -12,26 +12,22 @@ class App extends StatelessWidget {
   Widget build(BuildContext context) {
     return const MaterialApp(
       home: Material(
-        child: FallingSand(
-          height: 50,
-          width: 50,
-        ),
+        child: FallingSand(),
       ),
     );
   }
 }
 
 class FallingSand extends StatefulWidget {
-  const FallingSand({super.key, required this.width, required this.height});
-  final int width, height;
+  const FallingSand({super.key});
 
   @override
   State<FallingSand> createState() => _FallingSandState();
 }
 
 class _FallingSandState extends State<FallingSand>
-    with SingleTickerProviderStateMixin {
-  late final Ticker ticker;
+    with TickerProviderStateMixin {
+  late Ticker ticker;
 
   @override
   void initState() {
@@ -46,14 +42,11 @@ class _FallingSandState extends State<FallingSand>
   }
 
   void tick(Duration duration) {
-    // iterate over the board and move every cell down if it is not at the bottom
-    for (var col = 0; col < widget.width; col++) {
-      for (var row = widget.height - 1; row >= 0; row--) {
+    for (var col = 0; col < cellCount; col++) {
+      for (var row = cellCount - 1; row >= 0; row--) {
         var value = state[col][row];
         if (value != null) {
-          var canMoveDown = row + 1 < widget.height && //
-              state[col][row + 1] == null;
-
+          var canMoveDown = row + 1 < cellCount && state[col][row + 1] == null;
           if (canMoveDown) {
             setState(() {
               state[col][row + 1] = value;
@@ -65,16 +58,17 @@ class _FallingSandState extends State<FallingSand>
     }
   }
 
-  late var state = emptyState();
+  var cellCount = 50;
+  late var state = emptyState(cellCount);
 
-  List<List<Color?>> emptyState() => List.generate(
-      widget.width, (i) => List.generate(widget.height, (j) => null));
+  static List<List<Color?>> emptyState(int size) =>
+      List.generate(size, (i) => List.generate(size, (j) => null));
 
   final size = const Size.square(1000);
 
   late final cellSize = Size(
-    size.width / widget.width,
-    size.height / widget.height,
+    size.width / cellCount,
+    size.height / cellCount,
   );
 
   Color? color = Colors.black;
@@ -83,8 +77,8 @@ class _FallingSandState extends State<FallingSand>
     var x = max(0, offset.dx) ~/ cellSize.width;
     var y = max(0, offset.dy) ~/ cellSize.height;
 
-    x = min(x, widget.width - 1);
-    y = min(y, widget.height - 1);
+    x = min(x, cellCount - 1);
+    y = min(y, cellCount - 1);
 
     if (state[x][y] != null) return;
 
@@ -93,10 +87,33 @@ class _FallingSandState extends State<FallingSand>
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return Column(
       mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.clear),
+                onPressed: () => setState(() => state = emptyState(cellCount)),
+              ),
+              for (var i = 0; i < Colors.primaries.length; i++)
+                IconButton(
+                  icon: const Icon(Icons.square),
+                  tooltip: i < 9 ? '${i + 1}' : null,
+                  color: Colors.primaries[i],
+                  onPressed: () => setState(() => color = Colors.primaries[i]),
+                ),
+              IconButton(
+                icon: const Icon(Icons.square),
+                color: Colors.black,
+                onPressed: () => setState(() => color = Colors.black),
+              ),
+            ],
+          ),
+        ),
         Container(
           constraints: BoxConstraints.tight(size),
           decoration: BoxDecoration(border: Border.all()),
@@ -110,29 +127,6 @@ class _FallingSandState extends State<FallingSand>
             onPointerMove: (event) => positionToCellUpdate(event.localPosition),
             onPointerDown: (event) => positionToCellUpdate(event.localPosition),
             onPointerUp: (event) => positionToCellUpdate(event.localPosition),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.clear),
-                onPressed: () => setState(() => state = emptyState()),
-              ),
-              IconButton(
-                icon: const Icon(Icons.square),
-                color: Colors.black,
-                onPressed: () => setState(() => color = Colors.black),
-              ),
-              for (var i = 0; i < Colors.primaries.length; i++)
-                IconButton(
-                  icon: const Icon(Icons.square),
-                  color: Colors.primaries[i],
-                  onPressed: () => setState(() => color = Colors.primaries[i]),
-                ),
-            ],
           ),
         ),
       ],
