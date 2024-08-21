@@ -11,5 +11,5 @@ _Demo at <https://luckey-elijah.github.io/falling_sand/>_
 - [x] Density/Resolution Switch
 - [x] Authentication
 - [x] Creation Submission
-- [ ] Creation Browsing
+- [x] Creation Browsing
 - [ ] Creation Management
