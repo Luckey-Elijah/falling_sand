@@ -95,7 +95,7 @@ class _FallingSandState extends State<FallingSand>
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              IconButton(
+              IconButton.outlined(
                 icon: const Icon(Icons.clear),
                 onPressed: () => setState(() => state = emptyState(cellCount)),
               ),
@@ -111,38 +111,51 @@ class _FallingSandState extends State<FallingSand>
                 color: Colors.black,
                 onPressed: () => setState(() => color = Colors.black),
               ),
-              IconButton(
-                icon: const Icon(Icons.density_large),
-                onPressed: () => setState(() {
-                  cellCount = 50;
-                  state = emptyState(cellCount);
-                  cellSize = Size(
-                    size.width / cellCount,
-                    size.height / cellCount,
-                  );
-                }),
-              ),
-              IconButton(
-                icon: const Icon(Icons.density_medium),
-                onPressed: () => setState(() {
-                  cellCount = 250;
-                  state = emptyState(cellCount);
-                  cellSize = Size(
-                    size.width / cellCount,
-                    size.height / cellCount,
-                  );
-                }),
-              ),
-              IconButton(
-                icon: const Icon(Icons.density_small),
-                onPressed: () => setState(() {
-                  cellCount = 500;
-                  state = emptyState(cellCount);
-                  cellSize = Size(
-                    size.width / cellCount,
-                    size.height / cellCount,
-                  );
-                }),
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(),
+                ),
+                child: Row(
+                  children: [
+                    IconButton(
+                      tooltip: 'Some Pixels',
+                      icon: const Icon(Icons.density_large),
+                      onPressed: () => setState(() {
+                        cellCount = 50;
+                        state = emptyState(cellCount);
+                        cellSize = Size(
+                          size.width / cellCount,
+                          size.height / cellCount,
+                        );
+                      }),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.density_medium),
+                      tooltip: 'More Pixels',
+                      onPressed: () => setState(() {
+                        cellCount = 250;
+                        state = emptyState(cellCount);
+                        cellSize = Size(
+                          size.width / cellCount,
+                          size.height / cellCount,
+                        );
+                      }),
+                    ),
+                    IconButton(
+                      tooltip: 'Most Pixels',
+                      icon: const Icon(Icons.density_small),
+                      onPressed: () => setState(() {
+                        cellCount = 500;
+                        state = emptyState(cellCount);
+                        cellSize = Size(
+                          size.width / cellCount,
+                          size.height / cellCount,
+                        );
+                      }),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
