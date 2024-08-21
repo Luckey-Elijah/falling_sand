@@ -44,12 +44,12 @@ class _FallingSandState extends State<FallingSand>
   void tick(Duration duration) {
     for (var col = 0; col < cellCount; col++) {
       for (var row = cellCount - 1; row >= 0; row--) {
-        var value = state[col][row];
-        if (value != null) {
+        var color = state[col][row];
+        if (color != null) {
           var canMoveDown = row + 1 < cellCount && state[col][row + 1] == null;
           if (canMoveDown) {
             setState(() {
-              state[col][row + 1] = value;
+              state[col][row + 1] = color;
               state[col][row] = null;
             });
           }
@@ -66,7 +66,7 @@ class _FallingSandState extends State<FallingSand>
 
   final size = const Size.square(1000);
 
-  late final cellSize = Size(
+  late var cellSize = Size(
     size.width / cellCount,
     size.height / cellCount,
   );
@@ -110,6 +110,39 @@ class _FallingSandState extends State<FallingSand>
                 icon: const Icon(Icons.square),
                 color: Colors.black,
                 onPressed: () => setState(() => color = Colors.black),
+              ),
+              IconButton(
+                icon: const Icon(Icons.density_large),
+                onPressed: () => setState(() {
+                  cellCount = 50;
+                  state = emptyState(cellCount);
+                  cellSize = Size(
+                    size.width / cellCount,
+                    size.height / cellCount,
+                  );
+                }),
+              ),
+              IconButton(
+                icon: const Icon(Icons.density_medium),
+                onPressed: () => setState(() {
+                  cellCount = 250;
+                  state = emptyState(cellCount);
+                  cellSize = Size(
+                    size.width / cellCount,
+                    size.height / cellCount,
+                  );
+                }),
+              ),
+              IconButton(
+                icon: const Icon(Icons.density_small),
+                onPressed: () => setState(() {
+                  cellCount = 500;
+                  state = emptyState(cellCount);
+                  cellSize = Size(
+                    size.width / cellCount,
+                    size.height / cellCount,
+                  );
+                }),
               ),
             ],
           ),
