@@ -257,6 +257,7 @@ class _FallingSandState extends State<FallingSand>
                   ],
                 ),
               ),
+              const SizedBox(width: 8),
               DecoratedBox(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(8),
@@ -266,18 +267,20 @@ class _FallingSandState extends State<FallingSand>
                   children: [
                     IconButton(
                       tooltip: 'Small pen',
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.circle,
                         size: 12,
+                        color: cursorSize == CursorSize.small ? color : null,
                       ),
                       onPressed: () => setState(() {
                         cursorSize = CursorSize.small;
                       }),
                     ),
                     IconButton(
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.circle,
                         size: 16,
+                        color: cursorSize == CursorSize.medium ? color : null,
                       ),
                       tooltip: 'Medium pen',
                       onPressed: () => setState(() {
@@ -286,10 +289,12 @@ class _FallingSandState extends State<FallingSand>
                     ),
                     IconButton(
                       tooltip: 'Big pen',
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.circle,
                         size: 20,
+                        color: cursorSize == CursorSize.big ? color : null,
                       ),
+                      isSelected: cursorSize == CursorSize.big,
                       onPressed: () => setState(() {
                         cursorSize = CursorSize.big;
                       }),
