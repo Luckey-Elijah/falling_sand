@@ -31,6 +31,8 @@ class App extends StatelessWidget {
   }
 }
 
+enum Action { fall, erase }
+
 class FallingSand extends StatefulWidget {
   const FallingSand({super.key});
 
@@ -43,6 +45,7 @@ class _FallingSandState extends State<FallingSand>
   late final rng = Random();
   late Ticker ticker;
   late bool canMakeAction = false;
+  late Action currentAction = Action.fall;
 
   @override
   void initState() {
@@ -104,6 +107,14 @@ class _FallingSandState extends State<FallingSand>
     if (!tetrominoEnabled) {
       x = min(x, cellCount - 1);
       y = min(y, cellCount - 1);
+
+      if (currentAction == Action.erase) {
+        if (state[x][y] == null) return;
+
+        setState(() => state[x][y] = null);
+
+        return;
+      }
 
       if (state[x][y] != null) return;
 
@@ -225,6 +236,22 @@ class _FallingSandState extends State<FallingSand>
                 ),
                 onPressed: () =>
                     setState(() => tetrominoEnabled = !tetrominoEnabled),
+              ),
+              const SizedBox(width: 8),
+              IconButton.outlined(
+                icon: const Icon(Icons.earbuds_battery),
+                isSelected: currentAction == Action.erase,
+                onPressed: () {
+                  setState(() => currentAction = Action.erase);
+                },
+              ),
+              const SizedBox(width: 8),
+              IconButton.outlined(
+                icon: const Icon(Icons.edit),
+                isSelected: currentAction == Action.fall,
+                onPressed: () {
+                  setState(() => currentAction = Action.fall);
+                },
               ),
               const SizedBox(width: 8),
               IconButton.outlined(
