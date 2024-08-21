@@ -148,6 +148,7 @@ class _BrowseWidgetState extends State<BrowseWidget> {
     FutureBuilder.debugRethrowError = true;
     final resultList = await pb.collection('creations').getList(
           expand: 'user',
+          sort: '-created',
         );
     final data = resultList.items.map(
       (item) => {...item.data, ...item.expand},
