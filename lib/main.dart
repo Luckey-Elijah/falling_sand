@@ -5,6 +5,7 @@ import 'package:falling_sand/falling_sand_painter.dart';
 import 'package:falling_sand/tetromino_data.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:pocketbase/pocketbase.dart';
 
 void main() => runApp(const App());
@@ -31,7 +32,7 @@ class App extends StatelessWidget {
   }
 }
 
-enum Action { fall, erase }
+enum Action { fall, erase, tetromino }
 
 enum CursorSize { small, medium, big }
 
@@ -245,7 +246,7 @@ class _FallingSandState extends State<FallingSand>
     var x = max(0, offset.dx) ~/ cellSize.width;
     var y = max(0, offset.dy) ~/ cellSize.height;
 
-    if (!tetrominoEnabled) {
+    if (currentAction != Action.tetromino) {
       x = min(x, cellCount - 1);
       y = min(y, cellCount - 1);
 
@@ -382,57 +383,81 @@ class _FallingSandState extends State<FallingSand>
                 ),
               ),
               const SizedBox(width: 8),
-              IconButton.outlined(
-                tooltip: 'Tetromino',
-                icon: SizedBox(
-                  height: 20,
-                  width: 25,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Expanded(
-                        child: ColoredBox(
-                          color:
-                              tetrominoEnabled ? Colors.black : Colors.black26,
-                        ),
-                      ),
-                      Expanded(
-                        child: Row(
+              const SizedBox(width: 8),
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(),
+                ),
+                child: Row(
+                  children: [
+                    IconButton(
+                      tooltip: 'Tetromino',
+                      icon: SizedBox(
+                        height: 20,
+                        width: 25,
+                        child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            const Spacer(),
                             Expanded(
                               child: ColoredBox(
-                                color: tetrominoEnabled
+                                color: currentAction == Action.tetromino
                                     ? Colors.black
                                     : Colors.black26,
                               ),
                             ),
-                            const Spacer(),
+                            Expanded(
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  const Spacer(),
+                                  Expanded(
+                                    child: ColoredBox(
+                                      color: currentAction == Action.tetromino
+                                          ? Colors.black
+                                          : Colors.black26,
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                ],
+                              ),
+                            ),
                           ],
                         ),
                       ),
-                    ],
-                  ),
+                      onPressed: () =>
+                          setState(() => currentAction = Action.tetromino),
+                    ),
+                    IconButton(
+                      tooltip: 'Eraser',
+                      icon: SvgPicture.asset(
+                        'assets/icons/ink_eraser.svg',
+                        semanticsLabel: 'Eraser',
+                        height: 26,
+                        colorFilter: ColorFilter.mode(
+                          currentAction == Action.erase
+                              ? Theme.of(context).primaryColor
+                              : Theme.of(context).iconTheme.color!,
+                          BlendMode.srcIn,
+                        ),
+                      ),
+                      isSelected: currentAction == Action.erase,
+                      onPressed: () {
+                        setState(() => currentAction = Action.erase);
+                      },
+                    ),
+                    IconButton(
+                      tooltip: 'Draw',
+                      icon: const Icon(
+                        Icons.edit,
+                      ),
+                      isSelected: currentAction == Action.fall,
+                      onPressed: () {
+                        setState(() => currentAction = Action.fall);
+                      },
+                    ),
+                  ],
                 ),
-                onPressed: () =>
-                    setState(() => tetrominoEnabled = !tetrominoEnabled),
-              ),
-              const SizedBox(width: 8),
-              IconButton.outlined(
-                icon: const Icon(Icons.earbuds_battery),
-                isSelected: currentAction == Action.erase,
-                onPressed: () {
-                  setState(() => currentAction = Action.erase);
-                },
-              ),
-              const SizedBox(width: 8),
-              IconButton.outlined(
-                icon: const Icon(Icons.edit),
-                isSelected: currentAction == Action.fall,
-                onPressed: () {
-                  setState(() => currentAction = Action.fall);
-                },
               ),
               const SizedBox(width: 8),
               IconButton.outlined(
