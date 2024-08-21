@@ -99,6 +99,73 @@ class _FallingSandState extends State<FallingSand>
 
   bool tetrominoEnabled = false;
 
+  void applyPen(int x, int y) {
+    switch (cursorSize) {
+      case CursorSize.small:
+        // 1x1 square
+        setState(() => state[x][y] = null);
+
+      case CursorSize.medium:
+        // 2x2 square and the top left corner is the mouse position
+        setState(() {
+          state[x][y] = null;
+
+          if (state.length > x + 1 && state[x + 1][y] != null) {
+            state[x + 1][y] = null;
+          }
+          if (state[x].length > y + 1 && state[x][y + 1] != null) {
+            state[x][y + 1] = null;
+          }
+          if (state.length > x + 1 &&
+              state[x + 1].length > y + 1 &&
+              state[x + 1][y + 1] != null) {
+            state[x + 1][y + 1] = null;
+          }
+        });
+
+      case CursorSize.big:
+        // 3x3 square and the center is the mouse position
+        setState(() {
+          // row above the mouse
+          if (x - 1 >= 0 && y - 1 >= 0) {
+            state[x - 1][y - 1] = null;
+          }
+          if (y - 1 >= 0) {
+            state[x][y - 1] = null;
+          }
+          if (state.length > x + 1 && y - 1 >= 0) {
+            state[x + 1][y - 1] = null;
+          }
+
+          // row at the same level than the mouse
+
+          if (x - 1 >= 0) {
+            state[x - 1][y] = null;
+          }
+
+          state[x][y] = null;
+
+          if (state.length > x + 1) {
+            state[x + 1][y] = null;
+          }
+
+          // row under the mouse
+
+          if (x - 1 >= 0 && state[x - 1].length > y + 1) {
+            state[x - 1][y + 1] = null;
+          }
+
+          if (state[x].length > y + 1) {
+            state[x][y + 1] = null;
+          }
+
+          if (state.length > x + 1 && state[x + 1].length > y + 1) {
+            state[x + 1][y + 1] = null;
+          }
+        });
+    }
+  }
+
   void positionToCellUpdate(Offset offset) {
     if (!canMakeAction) {
       return;
@@ -112,37 +179,7 @@ class _FallingSandState extends State<FallingSand>
       y = min(y, cellCount - 1);
 
       if (currentAction == Action.erase) {
-        if (state[x][y] == null) return;
-
-        switch (cursorSize) {
-          case CursorSize.small:
-            // 1x1 square
-            setState(() => state[x][y] = null);
-
-          case CursorSize.medium:
-            // 2x2 square and the top left corner is the mouse position
-            setState(() {
-              state[x][y] = null;
-              state[x + 1][y] = null;
-              state[x][y + 1] = null;
-              state[x + 1][y + 1] = null;
-            });
-
-          case CursorSize.big:
-            // 3x3 square and the center is the mouse position
-            setState(() {
-              state[x - 1][y - 1] = null;
-              state[x][y - 1] = null;
-              state[x + 1][y - 1] = null;
-              state[x - 1][y] = null;
-              state[x][y] = null;
-              state[x + 1][y] = null;
-              state[x - 1][y + 1] = null;
-              state[x][y + 1] = null;
-              state[x + 1][y + 1] = null;
-            });
-        }
-
+        applyPen(x, y);
         return;
       }
 
