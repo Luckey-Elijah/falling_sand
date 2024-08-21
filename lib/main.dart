@@ -33,6 +33,8 @@ class App extends StatelessWidget {
 
 enum Action { fall, erase }
 
+enum CursorSize { small, medium, big }
+
 class FallingSand extends StatefulWidget {
   const FallingSand({super.key});
 
@@ -46,6 +48,7 @@ class _FallingSandState extends State<FallingSand>
   late Ticker ticker;
   late bool canMakeAction = false;
   late Action currentAction = Action.fall;
+  late CursorSize cursorSize = CursorSize.small;
 
   @override
   void initState() {
@@ -111,14 +114,68 @@ class _FallingSandState extends State<FallingSand>
       if (currentAction == Action.erase) {
         if (state[x][y] == null) return;
 
-        setState(() => state[x][y] = null);
+        switch (cursorSize) {
+          case CursorSize.small:
+            // 1x1 square
+            setState(() => state[x][y] = null);
+
+          case CursorSize.medium:
+            // 2x2 square and the top left corner is the mouse position
+            setState(() {
+              state[x][y] = null;
+              state[x + 1][y] = null;
+              state[x][y + 1] = null;
+              state[x + 1][y + 1] = null;
+            });
+
+          case CursorSize.big:
+            // 3x3 square and the center is the mouse position
+            setState(() {
+              state[x - 1][y - 1] = null;
+              state[x][y - 1] = null;
+              state[x + 1][y - 1] = null;
+              state[x - 1][y] = null;
+              state[x][y] = null;
+              state[x + 1][y] = null;
+              state[x - 1][y + 1] = null;
+              state[x][y + 1] = null;
+              state[x + 1][y + 1] = null;
+            });
+        }
 
         return;
       }
 
       if (state[x][y] != null) return;
 
-      setState(() => state[x][y] = color);
+      switch (cursorSize) {
+        case CursorSize.small:
+          // 1x1 square
+          setState(() => state[x][y] = color);
+
+        case CursorSize.medium:
+          // 2x2 square and the top left corner is the mouse position
+          setState(() {
+            state[x][y] = color;
+            state[x + 1][y] = color;
+            state[x][y + 1] = color;
+            state[x + 1][y + 1] = color;
+          });
+
+        case CursorSize.big:
+          // 3x3 square and the center is the mouse position
+          setState(() {
+            state[x - 1][y - 1] = color;
+            state[x][y - 1] = color;
+            state[x + 1][y - 1] = color;
+            state[x - 1][y] = color;
+            state[x][y] = color;
+            state[x + 1][y] = color;
+            state[x - 1][y + 1] = color;
+            state[x][y + 1] = color;
+            state[x + 1][y + 1] = color;
+          });
+      }
 
       return;
     }
@@ -195,6 +252,46 @@ class _FallingSandState extends State<FallingSand>
                         cellCount = 500;
                         state = emptyState(cellCount);
                         cellSize = buildCellSize();
+                      }),
+                    ),
+                  ],
+                ),
+              ),
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(),
+                ),
+                child: Row(
+                  children: [
+                    IconButton(
+                      tooltip: 'Small pen',
+                      icon: const Icon(
+                        Icons.circle,
+                        size: 12,
+                      ),
+                      onPressed: () => setState(() {
+                        cursorSize = CursorSize.small;
+                      }),
+                    ),
+                    IconButton(
+                      icon: const Icon(
+                        Icons.circle,
+                        size: 16,
+                      ),
+                      tooltip: 'Medium pen',
+                      onPressed: () => setState(() {
+                        cursorSize = CursorSize.medium;
+                      }),
+                    ),
+                    IconButton(
+                      tooltip: 'Big pen',
+                      icon: const Icon(
+                        Icons.circle,
+                        size: 20,
+                      ),
+                      onPressed: () => setState(() {
+                        cursorSize = CursorSize.big;
                       }),
                     ),
                   ],
