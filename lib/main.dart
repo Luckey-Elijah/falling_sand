@@ -17,6 +17,7 @@ class App extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const MaterialApp(
+      debugShowCheckedModeBanner: false,
       home: Scaffold(
         body: ConnectionWidget(
           child: Material(
@@ -54,9 +55,10 @@ class _FallingSandState extends State<FallingSand>
   void tick(Duration duration) {
     for (var col = 0; col < cellCount; col++) {
       for (var row = cellCount - 1; row >= 0; row--) {
-        var color = state[col][row];
+        final color = state[col][row];
         if (color != null) {
-          var canMoveDown = row + 1 < cellCount && state[col][row + 1] == null;
+          final canMoveDown =
+              row + 1 < cellCount && state[col][row + 1] == null;
           if (canMoveDown) {
             setState(() {
               state[col][row + 1] = color;
@@ -68,7 +70,7 @@ class _FallingSandState extends State<FallingSand>
     }
   }
 
-  var cellCount = 50;
+  int cellCount = 50;
 
   List<List<Color?>> get state => creation.value;
   set state(List<List<Color?>> val) => creation.value = val;
@@ -78,7 +80,7 @@ class _FallingSandState extends State<FallingSand>
 
   final size = const Size.square(1000);
 
-  late var cellSize = Size(
+  late Size cellSize = Size(
     size.width / cellCount,
     size.height / cellCount,
   );
@@ -103,7 +105,7 @@ class _FallingSandState extends State<FallingSand>
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Padding(
-          padding: const EdgeInsets.all(8.0),
+          padding: const EdgeInsets.all(8),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -202,23 +204,23 @@ class _FallingSandState extends State<FallingSand>
 class FallingSandPainter extends CustomPainter {
   FallingSandPainter(this.state);
   final List<List<Color?>> state;
-  var paintBrush = Paint();
+  Paint paintBrush = Paint();
 
   @override
   void paint(Canvas canvas, Size size) {
-    var width = state.length;
-    var height = state[0].length;
-    var divisionX = size.width / width;
-    var divisionY = size.height / height;
+    final width = state.length;
+    final height = state[0].length;
+    final divisionX = size.width / width;
+    final divisionY = size.height / height;
 
     // add 1 to account for ghost lines
     final cellSize = Size(divisionX + 1, divisionY + 1);
 
     for (var col = 0; col < width; col++) {
       for (var row = 0; row < height; row++) {
-        var color = state[col][row];
+        final color = state[col][row];
         if (color != null) {
-          var rect = Offset(col * divisionX, row * divisionY) & cellSize;
+          final rect = Offset(col * divisionX, row * divisionY) & cellSize;
           canvas.drawRect(rect, paintBrush..color = color);
         }
       }
@@ -232,21 +234,25 @@ class FallingSandPainter extends CustomPainter {
 }
 
 class CreationModel {
-  final List<List<Color?>> data;
-
   const CreationModel({required this.data});
 
   factory CreationModel.fromJson(Map<String, dynamic> source) {
-    if (source case {'data': List data}) {
+    if (source case {'data': final List<dynamic> data}) {
       return CreationModel(
-          data: data
-              .cast<List<int>>()
-              .map((row) => row.map((cell) => Color(cell)).toList())
-              .toList());
+        data: data
+            .map((c) => (c as List<dynamic>).cast<int?>())
+            .map(
+              (r) => r
+                  .map((value) => value == null ? null : Color(value))
+                  .toList(),
+            )
+            .toList(),
+      );
     }
 
     throw UnsupportedError(
       'The format of the response is not supported.\n$source',
     );
   }
+  final List<List<Color?>> data;
 }

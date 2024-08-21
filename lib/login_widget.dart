@@ -12,8 +12,8 @@ class LoginWidget extends StatefulWidget {
 class _LoginWidgetState extends State<LoginWidget> {
   final username = TextEditingController();
   final password = TextEditingController();
-  var showPassword = false;
-  var loading = false;
+  bool showPassword = false;
+  bool loading = false;
   String? error;
 
   Future<void> login() async {
@@ -30,7 +30,7 @@ class _LoginWidgetState extends State<LoginWidget> {
       setState(() => loading = false);
     }
 
-    var context = this.context;
+    final context = this.context;
 
     if (recordAuth != null && context.mounted) {
       return Navigator.of(context).pop();
@@ -86,13 +86,13 @@ class _LoginWidgetState extends State<LoginWidget> {
                 decoration: const InputDecoration(hintText: 'username'),
                 autofillHints: const [
                   AutofillHints.username,
-                  AutofillHints.newUsername
+                  AutofillHints.newUsername,
                 ],
               ),
               TextField(
                 enabled: !loading,
                 controller: password,
-                onSubmitted: (value) {},
+                onSubmitted: (_) async => login(),
                 decoration: InputDecoration(
                   hintText: 'password',
                   suffixIcon: IconButton(
@@ -100,12 +100,13 @@ class _LoginWidgetState extends State<LoginWidget> {
                       () => showPassword = !showPassword,
                     ),
                     icon: Icon(
-                        showPassword ? Icons.visibility_off : Icons.visibility),
+                      showPassword ? Icons.visibility_off : Icons.visibility,
+                    ),
                   ),
                 ),
                 autofillHints: const [
                   AutofillHints.password,
-                  AutofillHints.newPassword
+                  AutofillHints.newPassword,
                 ],
                 obscureText: !showPassword,
               ),
@@ -129,7 +130,7 @@ class _LoginWidgetState extends State<LoginWidget> {
                     child: const Text('create an account'),
                   ),
                 ],
-              )
+              ),
             ],
           ),
         ),
