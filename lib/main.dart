@@ -95,10 +95,6 @@ class _FallingSandState extends State<FallingSand>
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              IconButton.outlined(
-                icon: const Icon(Icons.clear),
-                onPressed: () => setState(() => state = emptyState(cellCount)),
-              ),
               for (var i = 0; i < Colors.primaries.length; i++)
                 IconButton(
                   icon: const Icon(Icons.square),
@@ -156,6 +152,11 @@ class _FallingSandState extends State<FallingSand>
                     ),
                   ],
                 ),
+              ),
+              const SizedBox(width: 8),
+              IconButton.outlined(
+                icon: const Icon(Icons.clear),
+                onPressed: () => setState(() => state = emptyState(cellCount)),
               ),
             ],
           ),
