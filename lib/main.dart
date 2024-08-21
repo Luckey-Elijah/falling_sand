@@ -204,9 +204,22 @@ class _FallingSandState extends State<FallingSand>
 
   Color? color = Colors.black;
 
+  bool tetrominoEnabled = false;
+
   void positionToCellUpdate(Offset offset) {
     var x = max(0, offset.dx) ~/ cellSize.width;
     var y = max(0, offset.dy) ~/ cellSize.height;
+
+    if (!tetrominoEnabled) {
+      x = min(x, cellCount - 1);
+      y = min(y, cellCount - 1);
+
+      if (state[x][y] != null) return;
+
+      setState(() => state[x][y] = color);
+
+      return;
+    }
 
     final tetrominoIndex = rng.nextInt(tetromino.length);
 
@@ -219,9 +232,11 @@ class _FallingSandState extends State<FallingSand>
 
         if (state[x][y] != null) continue;
 
-        setState(() => state[x][y] = color);
+        state[x][y] = color;
       }
     }
+
+    setState(() {});
   }
 
   @override
@@ -282,6 +297,43 @@ class _FallingSandState extends State<FallingSand>
                     ),
                   ],
                 ),
+              ),
+              const SizedBox(width: 8),
+              IconButton.outlined(
+                tooltip: 'Tetromino',
+                icon: SizedBox(
+                  height: 20,
+                  width: 25,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(
+                        child: ColoredBox(
+                          color:
+                              tetrominoEnabled ? Colors.black : Colors.black26,
+                        ),
+                      ),
+                      Expanded(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            const Spacer(),
+                            Expanded(
+                              child: ColoredBox(
+                                color: tetrominoEnabled
+                                    ? Colors.black
+                                    : Colors.black26,
+                              ),
+                            ),
+                            const Spacer(),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                onPressed: () =>
+                    setState(() => tetrominoEnabled = !tetrominoEnabled),
               ),
               const SizedBox(width: 8),
               IconButton.outlined(
