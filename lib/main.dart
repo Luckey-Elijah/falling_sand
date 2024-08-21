@@ -42,6 +42,7 @@ class _FallingSandState extends State<FallingSand>
     with TickerProviderStateMixin {
   late final rng = Random();
   late Ticker ticker;
+  late bool canMakeAction = false;
 
   @override
   void initState() {
@@ -93,6 +94,10 @@ class _FallingSandState extends State<FallingSand>
   bool tetrominoEnabled = false;
 
   void positionToCellUpdate(Offset offset) {
+    if (!canMakeAction) {
+      return;
+    }
+
     var x = max(0, offset.dx) ~/ cellSize.width;
     var y = max(0, offset.dy) ~/ cellSize.height;
 
@@ -244,10 +249,18 @@ class _FallingSandState extends State<FallingSand>
                     positionToCellUpdate(event.localPosition),
                 onPointerMove: (event) =>
                     positionToCellUpdate(event.localPosition),
-                onPointerDown: (event) =>
-                    positionToCellUpdate(event.localPosition),
-                onPointerUp: (event) =>
-                    positionToCellUpdate(event.localPosition),
+                onPointerDown: (event) {
+                  setState(() {
+                    canMakeAction = true;
+                  });
+                  positionToCellUpdate(event.localPosition);
+                },
+                onPointerUp: (event) {
+                  setState(() {
+                    canMakeAction = false;
+                  });
+                  positionToCellUpdate(event.localPosition);
+                },
               ),
             ),
           ),
