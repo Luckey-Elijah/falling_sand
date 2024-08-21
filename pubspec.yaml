@@ -1,15 +1,16 @@
 name: falling_sand
-description: fallling sand simlulation
+description: falling sand simulation painter
 publish_to: "none"
 version: 1.0.0+1
 environment: { sdk: ^3.5.0 }
 
 dependencies:
-  flutter: { sdk: flutter }
   collection: ^1.18.0
+  flutter: { sdk: flutter }
+  pocketbase: ^0.18.1
 
 dev_dependencies:
   flutter_test: { sdk: flutter }
-  flutter_lints: ^4.0.0
+  very_good_analysis: ^6.0.0
 
 flutter: { uses-material-design: true }
