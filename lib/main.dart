@@ -120,10 +120,7 @@ class _FallingSandState extends State<FallingSand>
                       onPressed: () => setState(() {
                         cellCount = 50;
                         state = emptyState(cellCount);
-                        cellSize = Size(
-                          size.width / cellCount,
-                          size.height / cellCount,
-                        );
+                        cellSize = buildCellSize();
                       }),
                     ),
                     IconButton(
@@ -132,10 +129,7 @@ class _FallingSandState extends State<FallingSand>
                       onPressed: () => setState(() {
                         cellCount = 250;
                         state = emptyState(cellCount);
-                        cellSize = Size(
-                          size.width / cellCount,
-                          size.height / cellCount,
-                        );
+                        cellSize = buildCellSize();
                       }),
                     ),
                     IconButton(
@@ -144,10 +138,7 @@ class _FallingSandState extends State<FallingSand>
                       onPressed: () => setState(() {
                         cellCount = 500;
                         state = emptyState(cellCount);
-                        cellSize = Size(
-                          size.width / cellCount,
-                          size.height / cellCount,
-                        );
+                        cellSize = buildCellSize();
                       }),
                     ),
                   ],
@@ -177,6 +168,13 @@ class _FallingSandState extends State<FallingSand>
           ),
         ),
       ],
+    );
+  }
+
+  Size buildCellSize() {
+    return Size(
+      size.width / cellCount,
+      size.height / cellCount,
     );
   }
 }
