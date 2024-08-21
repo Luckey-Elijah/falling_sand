@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:falling_sand/connection_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:pocketbase/pocketbase.dart';
@@ -23,120 +24,6 @@ class App extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class ConnectionWidget extends StatefulWidget {
-  const ConnectionWidget({super.key, required this.child});
-  final Widget child;
-
-  @override
-  State<ConnectionWidget> createState() => _ConnectionWidgetState();
-}
-
-class _ConnectionWidgetState extends State<ConnectionWidget> {
-  final stream = pb.authStore.onChange;
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Center(child: widget.child),
-        StreamBuilder<AuthStoreEvent?>(
-          stream: stream,
-          builder: (context, snapshot) {
-            final data = snapshot.data;
-
-            return Align(
-              alignment: Alignment.bottomRight,
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    if (isNotAuth(data)) _buildLoginButton(),
-                    if (isAuth(data)) ...[
-                      _buildSubmitCreationButton(data),
-                      _buildLogoutButton(),
-                    ],
-                  ],
-                ),
-              ),
-            );
-          },
-        ),
-      ],
-    );
-  }
-
-  OutlinedButton _buildSubmitCreationButton(AuthStoreEvent? data) {
-    return OutlinedButton(
-      onPressed: () async {
-        final body = <String, dynamic>{
-          'user': data?.model.id,
-          'data': creation.value
-              .map((row) => row.map((cell) => cell?.value).toList())
-              .toList(),
-        };
-        RecordModel? record;
-
-        try {
-          record = await pb.collection('creations').create(body: body);
-        } on ClientException catch (e) {
-          var ctx = context;
-          if (!ctx.mounted) return;
-          ScaffoldMessenger.of(ctx).showSnackBar(
-            SnackBar(
-              content: Text('${e.response}'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-        if (record != null) {
-          var ctx = context;
-          if (!ctx.mounted) return;
-          ScaffoldMessenger.of(ctx).showSnackBar(
-            const SnackBar(
-              content: Text('Creation uploaded!'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      },
-      child: const Text('Submit Creation'),
-    );
-  }
-
-  bool isAuth(AuthStoreEvent? data) {
-    if (data?.model == null) return false;
-    if (data?.token.isEmpty == true) return false;
-    if (data == null) return false;
-    return true;
-  }
-
-  bool isNotAuth(AuthStoreEvent? data) {
-    return data == null || data.token.isEmpty == true || data.model == null;
-  }
-
-  TextButton _buildLoginButton() {
-    return TextButton(
-      child: const Text('Login'),
-      onPressed: () {
-        showAdaptiveDialog(
-          context: context,
-          builder: (context) {
-            return const LoginWidget();
-          },
-        );
-      },
-    );
-  }
-
-  TextButton _buildLogoutButton() {
-    return TextButton(
-      child: const Text('Logout'),
-      onPressed: () => pb.authStore.clear(),
     );
   }
 }
@@ -349,8 +236,6 @@ class CreationModel {
 
   const CreationModel({required this.data});
 
-  // List<List<int?>> toJson() => data.map((row) => row.map((cell) => cell?.value).toList()).toList();
-
   factory CreationModel.fromJson(Map<String, dynamic> source) {
     if (source case {'data': List data}) {
       return CreationModel(
@@ -362,128 +247,6 @@ class CreationModel {
 
     throw UnsupportedError(
       'The format of the response is not supported.\n$source',
-    );
-  }
-}
-
-class LoginWidget extends StatefulWidget {
-  const LoginWidget({super.key});
-
-  @override
-  State<LoginWidget> createState() => _LoginWidgetState();
-}
-
-class _LoginWidgetState extends State<LoginWidget> {
-  final username = TextEditingController();
-  final password = TextEditingController();
-  var showPassword = false;
-  String? error;
-
-  @override
-  Widget build(BuildContext context) {
-    return Dialog(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 500),
-        child: Padding(
-          padding: const EdgeInsets.all(36),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                children: [
-                  Text(
-                    'Login',
-                    style: Theme.of(context).textTheme.displaySmall,
-                  ),
-                  const Spacer(),
-                  const CloseButton(),
-                ],
-              ),
-              TextField(
-                controller: username,
-                decoration: const InputDecoration(hintText: 'username'),
-                autofillHints: const [
-                  AutofillHints.username,
-                  AutofillHints.newUsername
-                ],
-              ),
-              TextField(
-                controller: password,
-                decoration: InputDecoration(
-                  hintText: 'password',
-                  suffixIcon: IconButton(
-                    onPressed: () => setState(
-                      () => showPassword = !showPassword,
-                    ),
-                    icon: Icon(
-                        showPassword ? Icons.visibility_off : Icons.visibility),
-                  ),
-                ),
-                autofillHints: const [
-                  AutofillHints.password,
-                  AutofillHints.newPassword
-                ],
-                obscureText: !showPassword,
-              ),
-              if (error != null)
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    CloseButton(onPressed: () => setState(() => error = null)),
-                    Flexible(child: Text('$error')),
-                  ],
-                ),
-              Row(
-                children: [
-                  TextButton(
-                    onPressed: () async {
-                      RecordAuth? recordAuth;
-                      try {
-                        recordAuth =
-                            await pb.collection('users').authWithPassword(
-                                  username.text,
-                                  password.text,
-                                );
-                      } on ClientException catch (e) {
-                        setState(() => error = '${e.response}');
-                      }
-
-                      if (recordAuth != null && context.mounted) {
-                        return Navigator.of(context).pop();
-                      } else {
-                        password.clear();
-                      }
-                    },
-                    child: const Text('login'),
-                  ),
-                  const Spacer(),
-                  TextButton(
-                    onPressed: () async {
-                      RecordModel? model;
-                      try {
-                        model = await pb.collection('users').create(
-                          body: {
-                            'username': username.text,
-                            'password': password.text,
-                            'passwordConfirm': password.text,
-                            'emailVisibility': false,
-                          },
-                        );
-                      } on ClientException catch (e) {
-                        setState(() => error = '${e.response}');
-                      }
-                      if (model != null && model.id.isNotEmpty) {
-                        print(model.data);
-                      }
-                    },
-                    child: const Text('create an account'),
-                  ),
-                ],
-              )
-            ],
-          ),
-        ),
-      ),
     );
   }
 }
