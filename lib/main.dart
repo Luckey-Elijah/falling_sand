@@ -152,19 +152,27 @@ class _FallingSandState extends State<FallingSand>
             ],
           ),
         ),
-        Container(
-          constraints: BoxConstraints.tight(size),
+        DecoratedBox(
           decoration: BoxDecoration(border: Border.all()),
-          child: Listener(
-            child: CustomPaint(
-              size: size,
-              painter: FallingSandPainter(state),
+          child: Padding(
+            padding: const EdgeInsets.all(1),
+            child: ConstrainedBox(
+              constraints: BoxConstraints.tight(size),
+              child: Listener(
+                child: CustomPaint(
+                  size: size,
+                  painter: FallingSandPainter(state),
+                ),
+                onPointerHover: (event) =>
+                    positionToCellUpdate(event.localPosition),
+                onPointerMove: (event) =>
+                    positionToCellUpdate(event.localPosition),
+                onPointerDown: (event) =>
+                    positionToCellUpdate(event.localPosition),
+                onPointerUp: (event) =>
+                    positionToCellUpdate(event.localPosition),
+              ),
             ),
-            onPointerHover: (event) =>
-                positionToCellUpdate(event.localPosition),
-            onPointerMove: (event) => positionToCellUpdate(event.localPosition),
-            onPointerDown: (event) => positionToCellUpdate(event.localPosition),
-            onPointerUp: (event) => positionToCellUpdate(event.localPosition),
           ),
         ),
       ],
@@ -199,6 +207,7 @@ class FallingSandPainter extends CustomPainter {
         var color = state[col][row];
         if (color != null) {
           var rect = Offset(col * divisionX, row * divisionY) & cellSize;
+
           canvas.drawRect(rect, paintBrush..color = color);
         }
       }
