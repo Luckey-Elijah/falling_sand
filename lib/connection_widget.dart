@@ -146,8 +146,12 @@ class _BrowseWidgetState extends State<BrowseWidget> {
 
   Future<List<CreationModel>> getCreations() async {
     FutureBuilder.debugRethrowError = true;
-    final resultList = await pb.collection('creations').getList();
-    final data = resultList.items.map((item) => item.data).toList();
+    final resultList = await pb.collection('creations').getList(
+          expand: 'user',
+        );
+    final data = resultList.items.map(
+      (item) => {...item.data, ...item.expand},
+    );
     final creations = data.map(CreationModel.fromJson).toList();
 
     return creations;
@@ -165,6 +169,10 @@ class _BrowseWidgetState extends State<BrowseWidget> {
       child: FutureBuilder(
         future: creationsFuture,
         builder: (context, snapshot) {
+          final loading = snapshot.connectionState == ConnectionState.waiting;
+          final hasDataReady =
+              !loading && snapshot.hasData && snapshot.data!.isNotEmpty;
+
           return Column(
             children: [
               Row(
@@ -180,7 +188,7 @@ class _BrowseWidgetState extends State<BrowseWidget> {
                   const CloseButton(),
                 ],
               ),
-              if (snapshot.hasData)
+              if (hasDataReady)
                 Expanded(
                   child: GridView.builder(
                     itemCount: snapshot.data?.length,
@@ -189,22 +197,48 @@ class _BrowseWidgetState extends State<BrowseWidget> {
                       crossAxisCount: 2,
                     ),
                     itemBuilder: (context, index) {
+                      final state = snapshot.data![index].data;
+                      final name = snapshot.data![index].user;
                       return Padding(
                         padding: const EdgeInsets.all(36),
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(border: Border.all()),
-                          child: CustomPaint(
-                            painter:
-                                FallingSandPainter(snapshot.data![index].data),
-                          ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            if (name != null) Text(name),
+                            if (name == null) const Text('Unknown submission'),
+                            Expanded(child: CreationView(state: state)),
+                          ],
                         ),
                       );
                     },
                   ),
                 ),
+              if (loading) const CircularProgressIndicator.adaptive(),
+              if (!hasDataReady && !loading) const Text('Nothing to show'),
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+class CreationView extends StatelessWidget {
+  const CreationView({
+    required this.state,
+    super.key,
+  });
+
+  final List<List<Color?>> state;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(border: Border.all()),
+      child: CustomPaint(
+        painter: FallingSandPainter(
+          state,
+        ),
       ),
     );
   }
