@@ -6,6 +6,121 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:pocketbase/pocketbase.dart';
 
+// https://en.wikipedia.org/wiki/Tetromino
+const tetromino = [
+  // t tetromino
+  [
+    [true, true, true],
+    [false, true, false],
+  ],
+  // square tetromino
+  [
+    [true, true],
+    [true, true],
+  ],
+  // skew tetromino
+  [
+    [false, true, true],
+    [true, true, false],
+  ],
+  // straight tetromino
+  [
+    [true, true, true, true],
+  ],
+  // L-tetromino
+  [
+    [true, false],
+    [true, false],
+    [true, false],
+    [true, true],
+  ],
+  // reverse L-tetromino
+  [
+    [false, true],
+    [false, true],
+    [true, true],
+    [true, false],
+  ],
+  // J-tetromino
+  [
+    [true, false, false],
+    [true, true, true],
+  ],
+  // reverse J-tetromino
+  [
+    [false, false, true],
+    [true, true, true],
+  ],
+  // S-tetromino
+  [
+    [false, true, true],
+    [true, true, false],
+  ],
+  // reverse S-tetromino
+  [
+    [true, true, false],
+    [false, true, true],
+  ],
+  // Z-tetromino
+  [
+    [true, true, false],
+    [false, true, true],
+  ],
+  // reverse Z-tetromino
+  [
+    [false, true, true],
+    [true, true, false],
+  ],
+  // I-tetromino (vertical)
+  [
+    [true],
+    [true],
+    [true],
+    [true],
+  ],
+  // I-tetromino (horizontal)
+  [
+    [true, true, true, true],
+  ],
+  // T-tetromino (rotated)
+  [
+    [false, true],
+    [true, true, true],
+  ],
+  // T-tetromino (rotated reverse)
+  [
+    [true, true, true],
+    [false, true],
+  ],
+  // L-tetromino (rotated)
+  [
+    [true, true],
+    [true, false],
+    [true, false],
+  ],
+  // reverse L-tetromino (rotated)
+  [
+    [false, true],
+    [false, true],
+    [true, true],
+  ],
+  // square tetromino (rotated)
+  [
+    [true, true],
+    [true, true],
+  ],
+  // skew tetromino (rotated)
+  [
+    [true, true, false],
+    [false, true, true],
+  ],
+  // reverse skew tetromino
+  [
+    [false, true, true],
+    [true, true, false],
+  ],
+];
+
 void main() => runApp(const App());
 
 final creation = ValueNotifier(_FallingSandState.emptyState(50));
@@ -39,6 +154,7 @@ class FallingSand extends StatefulWidget {
 
 class _FallingSandState extends State<FallingSand>
     with TickerProviderStateMixin {
+  late final rng = Random();
   late Ticker ticker;
 
   @override
@@ -88,16 +204,39 @@ class _FallingSandState extends State<FallingSand>
 
   Color? color = Colors.black;
 
+  bool tetrominoEnabled = false;
+
   void positionToCellUpdate(Offset offset) {
     var x = max(0, offset.dx) ~/ cellSize.width;
     var y = max(0, offset.dy) ~/ cellSize.height;
 
-    x = min(x, cellCount - 1);
-    y = min(y, cellCount - 1);
+    if (!tetrominoEnabled) {
+      x = min(x, cellCount - 1);
+      y = min(y, cellCount - 1);
 
-    if (state[x][y] != null) return;
+      if (state[x][y] != null) return;
 
-    setState(() => state[x][y] = color);
+      setState(() => state[x][y] = color);
+
+      return;
+    }
+
+    final tetrominoIndex = rng.nextInt(tetromino.length);
+
+    for (final (i, shape) in tetromino[tetrominoIndex].indexed) {
+      for (final (j, pixel) in shape.indexed) {
+        if (!pixel) return;
+
+        x = min(x + j, cellCount - 1);
+        y = min(y + i, cellCount - 1);
+
+        if (state[x][y] != null) continue;
+
+        state[x][y] = color;
+      }
+    }
+
+    setState(() {});
   }
 
   @override
@@ -158,6 +297,43 @@ class _FallingSandState extends State<FallingSand>
                     ),
                   ],
                 ),
+              ),
+              const SizedBox(width: 8),
+              IconButton.outlined(
+                tooltip: 'Tetromino',
+                icon: SizedBox(
+                  height: 20,
+                  width: 25,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(
+                        child: ColoredBox(
+                          color:
+                              tetrominoEnabled ? Colors.black : Colors.black26,
+                        ),
+                      ),
+                      Expanded(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            const Spacer(),
+                            Expanded(
+                              child: ColoredBox(
+                                color: tetrominoEnabled
+                                    ? Colors.black
+                                    : Colors.black26,
+                              ),
+                            ),
+                            const Spacer(),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                onPressed: () =>
+                    setState(() => tetrominoEnabled = !tetrominoEnabled),
               ),
               const SizedBox(width: 8),
               IconButton.outlined(
