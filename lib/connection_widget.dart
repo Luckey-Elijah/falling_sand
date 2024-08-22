@@ -33,20 +33,12 @@ class _ConnectionWidgetState extends State<ConnectionWidget> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    OutlinedButton(
-                      child: const Text('Browse Creations'),
-                      onPressed: () async {
-                        await showAdaptiveDialog<void>(
-                          context: context,
-                          builder: (context) {
-                            return const BrowseWidget();
-                          },
-                        );
-                      },
-                    ),
+                    const BrowseCreationsButton(),
+                    const SizedBox(width: 8),
                     if (isNotAuth(data)) _buildLoginButton(),
                     if (isAuth(data)) ...[
                       _buildSubmitCreationButton(data),
+                      const SizedBox(width: 8),
                       _buildLogoutButton(),
                     ],
                   ],
@@ -94,7 +86,7 @@ class _ConnectionWidgetState extends State<ConnectionWidget> {
     }
   }
 
-  OutlinedButton _buildSubmitCreationButton(AuthStoreEvent? data) {
+  Widget _buildSubmitCreationButton(AuthStoreEvent? data) {
     return OutlinedButton(
       onPressed: () => submitCreation(data),
       child: const Text('Submit Creation'),
@@ -112,7 +104,7 @@ class _ConnectionWidgetState extends State<ConnectionWidget> {
     return data == null || data.token.isEmpty == true || data.model == null;
   }
 
-  TextButton _buildLoginButton() {
+  Widget _buildLoginButton() {
     return TextButton(
       child: const Text('Login'),
       onPressed: () async {
@@ -126,10 +118,27 @@ class _ConnectionWidgetState extends State<ConnectionWidget> {
     );
   }
 
-  TextButton _buildLogoutButton() {
+  Widget _buildLogoutButton() {
     return TextButton(
       child: const Text('Logout'),
       onPressed: () => pb.authStore.clear(),
+    );
+  }
+}
+
+class BrowseCreationsButton extends StatelessWidget {
+  const BrowseCreationsButton({
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton(
+      child: const Text('Browse Creations'),
+      onPressed: () => showAdaptiveDialog<void>(
+        context: context,
+        builder: (context) => const BrowseWidget(),
+      ),
     );
   }
 }
@@ -191,25 +200,53 @@ class _BrowseWidgetState extends State<BrowseWidget> {
               ),
               if (hasDataReady)
                 Expanded(
-                  child: GridView.builder(
-                    itemCount: snapshot.data?.length,
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                    ),
-                    itemBuilder: (context, index) {
-                      final state = snapshot.data![index].data;
-                      final name = snapshot.data![index].user;
-                      return Padding(
-                        padding: const EdgeInsets.all(36),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            if (name != null) Text(name),
-                            if (name == null) const Text('Unknown submission'),
-                            Expanded(child: CreationView(state: state)),
-                          ],
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final crossAxisCount = constraints.maxWidth ~/ 480;
+                      return GridView.builder(
+                        itemCount: snapshot.data?.length,
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: crossAxisCount,
                         ),
+                        itemBuilder: (context, index) {
+                          final state = snapshot.data![index].data;
+                          final name = snapshot.data![index].user;
+                          return Padding(
+                            padding: const EdgeInsets.all(36),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                if (name != null)
+                                  Align(
+                                    alignment: Alignment.centerLeft,
+                                    child: NameTag(name: name),
+                                  ),
+                                if (name == null)
+                                  const NameTag(name: 'Unknown submission'),
+                                Expanded(
+                                  child: InkWell(
+                                    onTap: () => showDialog<void>(
+                                      context: context,
+                                      builder: (context) => Dialog(
+                                        child: InkWell(
+                                          onTap: Navigator.of(context).pop,
+                                          child: AspectRatio(
+                                            aspectRatio: 1,
+                                            child: CreationView(
+                                              state: state,
+                                              size: Size.infinite,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    child: CreationView(state: state),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
                       );
                     },
                   ),
@@ -224,19 +261,51 @@ class _BrowseWidgetState extends State<BrowseWidget> {
   }
 }
 
+class NameTag extends StatelessWidget {
+  const NameTag({
+    required this.name,
+    super.key,
+  });
+
+  final String name;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.primaryContainer,
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 4,
+            vertical: 6,
+          ),
+          child: Text(name),
+        ),
+      ),
+    );
+  }
+}
+
 class CreationView extends StatelessWidget {
   const CreationView({
     required this.state,
+    this.size = Size.zero,
     super.key,
   });
 
   final List<List<Color?>> state;
+  final Size size;
 
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(border: Border.all()),
       child: CustomPaint(
+        size: size,
         painter: FallingSandPainter(
           state,
         ),
