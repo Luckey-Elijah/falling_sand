@@ -1,11 +1,11 @@
 import 'dart:math';
 
+import 'package:falling_sand/components.dart';
 import 'package:falling_sand/connection_widget.dart';
-import 'package:falling_sand/falling_sand_painter.dart';
+import 'package:falling_sand/sandbox.dart';
 import 'package:falling_sand/tetromino_data.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:pocketbase/pocketbase.dart';
 
 void main() => runApp(const App());
@@ -34,7 +34,7 @@ class App extends StatelessWidget {
 
 const unselectedIconColor = Colors.black26;
 
-enum Action { fall, erase, tetromino }
+enum EditAction { fall, erase, tetromino }
 
 enum CursorSize { small, medium, big }
 
@@ -50,7 +50,7 @@ class _FallingSandState extends State<FallingSand>
   late final rng = Random();
   late Ticker ticker;
   bool canMakeAction = false;
-  Action action = Action.fall;
+  EditAction action = EditAction.fall;
   CursorSize cursorSize = CursorSize.small;
 
   @override
@@ -63,6 +63,13 @@ class _FallingSandState extends State<FallingSand>
   void dispose() {
     ticker.dispose();
     super.dispose();
+  }
+
+  Size buildCellSize() {
+    return Size(
+      size.width / cellCount,
+      size.height / cellCount,
+    );
   }
 
   void tick(Duration duration) {
@@ -248,11 +255,11 @@ class _FallingSandState extends State<FallingSand>
     var x = max(0, offset.dx) ~/ cellSize.width;
     var y = max(0, offset.dy) ~/ cellSize.height;
 
-    if (action != Action.tetromino) {
+    if (action != EditAction.tetromino) {
       x = min(x, cellCount - 1);
       y = min(y, cellCount - 1);
 
-      if (action == Action.erase) {
+      if (action == EditAction.erase) {
         applyEraser(x, y);
         return;
       }
@@ -328,94 +335,16 @@ class _FallingSandState extends State<FallingSand>
                 ),
               ),
               const SizedBox(width: 8),
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(),
-                ),
-                child: Row(
-                  children: [
-                    IconButton(
-                      tooltip: 'Small pen',
-                      icon: Icon(
-                        Icons.circle,
-                        size: 12,
-                        color: cursorSize == CursorSize.small ? color : null,
-                      ),
-                      onPressed: () => setState(() {
-                        cursorSize = CursorSize.small;
-                      }),
-                    ),
-                    IconButton(
-                      icon: Icon(
-                        Icons.circle,
-                        size: 16,
-                        color: cursorSize == CursorSize.medium ? color : null,
-                      ),
-                      tooltip: 'Medium pen',
-                      onPressed: () => setState(() {
-                        cursorSize = CursorSize.medium;
-                      }),
-                    ),
-                    IconButton(
-                      tooltip: 'Big pen',
-                      icon: Icon(
-                        Icons.circle,
-                        size: 20,
-                        color: cursorSize == CursorSize.big ? color : null,
-                      ),
-                      isSelected: cursorSize == CursorSize.big,
-                      onPressed: () => setState(() {
-                        cursorSize = CursorSize.big;
-                      }),
-                    ),
-                  ],
-                ),
+              CursorSizeOptions(
+                onSize: (s) => setState(() => cursorSize = s),
+                size: cursorSize,
+                color: color,
               ),
               const SizedBox(width: 8),
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(),
-                ),
-                child: Row(
-                  children: [
-                    TetrominoIconButton(
-                      color: color,
-                      enabled: action == Action.tetromino,
-                      onPressed: () => setState(
-                        () => action = Action.tetromino,
-                      ),
-                    ),
-                    IconButton(
-                      color:
-                          action == Action.erase ? color : unselectedIconColor,
-                      tooltip: 'Eraser',
-                      icon: SvgPicture.asset(
-                        'assets/icons/ink_eraser.svg',
-                        semanticsLabel: 'Eraser',
-                        height: 26,
-                        colorFilter: ColorFilter.mode(
-                          action == Action.erase
-                              ? color ?? Theme.of(context).primaryColor
-                              : Colors.black,
-                          BlendMode.srcIn,
-                        ),
-                      ),
-                      isSelected: action == Action.erase,
-                      onPressed: () {
-                        setState(() => action = Action.erase);
-                      },
-                    ),
-                    IconButton(
-                      tooltip: 'Draw',
-                      color: action == Action.fall ? color : null,
-                      icon: const Icon(Icons.edit),
-                      isSelected: action == Action.fall,
-                      onPressed: () => setState(() => action = Action.fall),
-                    ),
-                  ],
-                ),
+              EditActionOptions(
+                onAction: (a) => setState(() => action = a),
+                action: action,
+                color: color,
               ),
               const SizedBox(width: 8),
               IconButton.outlined(
@@ -426,147 +355,22 @@ class _FallingSandState extends State<FallingSand>
             ],
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.all(8),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              for (final primary in [...Colors.primaries, Colors.black])
-                IconButton(
-                  icon: const Icon(Icons.square),
-                  color: primary,
-                  onPressed: () => setState(() => color = primary),
-                ),
-            ],
-          ),
-        ),
+        ColorOptions(onColor: (c) => setState(() => color = c)),
         Sandbox(
           state: state,
           size: size,
-          onPointerDown: () => setState(() => canMakeAction = true),
-          onPointerUp: () => setState(() => canMakeAction = false),
-          onPosition: positionToCellUpdate,
+          onPointerHover: positionToCellUpdate,
+          onPointerMove: positionToCellUpdate,
+          onPointerDown: (position) {
+            setState(() => canMakeAction = true);
+            positionToCellUpdate(position);
+          },
+          onPointerUp: (position) {
+            setState(() => canMakeAction = false);
+            positionToCellUpdate(position);
+          },
         ),
       ],
-    );
-  }
-
-  Size buildCellSize() {
-    return Size(
-      size.width / cellCount,
-      size.height / cellCount,
-    );
-  }
-}
-
-class Sandbox extends StatelessWidget {
-  const Sandbox({
-    required this.state,
-    required this.size,
-    required this.onPointerUp,
-    required this.onPointerDown,
-    required this.onPosition,
-    super.key,
-  });
-
-  final List<List<Color?>> state;
-  final VoidCallback onPointerUp;
-  final VoidCallback onPointerDown;
-  final void Function(Offset) onPosition;
-  final Size size;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(border: Border.all()),
-      child: Padding(
-        padding: const EdgeInsets.all(1),
-        child: ConstrainedBox(
-          constraints: BoxConstraints.tight(size),
-          child: Listener(
-            child: CustomPaint(
-              size: size,
-              painter: FallingSandPainter(state),
-            ),
-            onPointerHover: (e) => onPosition(e.localPosition),
-            onPointerMove: (e) => onPosition(e.localPosition),
-            onPointerDown: (e) {
-              onPointerDown();
-              onPosition(e.localPosition);
-            },
-            onPointerUp: (e) {
-              onPointerDown();
-              onPosition(e.localPosition);
-            },
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class ActionGroup extends StatelessWidget {
-  const ActionGroup({
-    super.key,
-    this.children = const [],
-  });
-
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(),
-      ),
-      child: Row(
-        children: children,
-      ),
-    );
-  }
-}
-
-class TetrominoIconButton extends StatelessWidget {
-  const TetrominoIconButton({
-    required this.enabled,
-    required this.color,
-    super.key,
-    this.onPressed,
-  });
-
-  final bool enabled;
-  final Color? color;
-  final VoidCallback? onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final iconColor = enabled
-        ? color ?? Theme.of(context).colorScheme.primary
-        : unselectedIconColor;
-    return IconButton(
-      tooltip: 'Tetromino',
-      icon: SizedBox(
-        height: 20,
-        width: 25,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(child: ColoredBox(color: iconColor)),
-            Expanded(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const Spacer(),
-                  Expanded(child: ColoredBox(color: iconColor)),
-                  const Spacer(),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-      onPressed: onPressed,
     );
   }
 }
