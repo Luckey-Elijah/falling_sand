@@ -310,9 +310,7 @@ class CreationView extends StatelessWidget {
       decoration: BoxDecoration(border: Border.all()),
       child: CustomPaint(
         size: size,
-        painter: FallingSandPainter(
-          state,
-        ),
+        painter: FallingSandPainter(state, state.length),
       ),
     );
   }

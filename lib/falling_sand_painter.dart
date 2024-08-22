@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 
 class FallingSandPainter extends CustomPainter {
-  FallingSandPainter(this.state);
+  FallingSandPainter(this.state, this.cellCount);
   final List<List<Color?>> state;
   Paint paintBrush = Paint();
+  final int cellCount;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final width = state.length;
-    final height = state[0].length;
+    final width = cellCount;
+    final height = cellCount;
     final divisionX = size.width / width;
     final divisionY = size.height / height;
 
