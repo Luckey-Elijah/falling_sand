@@ -65,13 +65,6 @@ class _FallingSandState extends State<FallingSand>
     super.dispose();
   }
 
-  Size buildCellSize() {
-    return Size(
-      size.width / cellCount,
-      size.height / cellCount,
-    );
-  }
-
   void tick(Duration duration) {
     for (var col = 0; col < cellCount; col++) {
       for (var row = cellCount - 1; row >= 0; row--) {
@@ -94,16 +87,10 @@ class _FallingSandState extends State<FallingSand>
 
   List<List<Color?>> get state => creation.value;
   set state(List<List<Color?>> val) => creation.value = val;
+  final GlobalKey sandKey = GlobalKey<_FallingSandState>();
 
   static List<List<Color?>> emptyState(int size) =>
       List.generate(size, (i) => List.generate(size, (j) => null));
-
-  final size = const Size.square(1000);
-
-  late Size cellSize = Size(
-    size.width / cellCount,
-    size.height / cellCount,
-  );
 
   Color? color = Colors.black;
 
@@ -252,8 +239,10 @@ class _FallingSandState extends State<FallingSand>
       return;
     }
 
-    var x = max(0, offset.dx) ~/ cellSize.width;
-    var y = max(0, offset.dy) ~/ cellSize.height;
+    final cellSize = sandKey.currentContext!.size!.width / cellCount;
+
+    var x = max(0, offset.dx) ~/ cellSize;
+    var y = max(0, offset.dy) ~/ cellSize;
 
     if (action != EditAction.tetromino) {
       x = min(x, cellCount - 1);
@@ -310,7 +299,6 @@ class _FallingSandState extends State<FallingSand>
                       onPressed: () => setState(() {
                         cellCount = 50;
                         state = emptyState(cellCount);
-                        cellSize = buildCellSize();
                       }),
                     ),
                     IconButton(
@@ -319,7 +307,6 @@ class _FallingSandState extends State<FallingSand>
                       onPressed: () => setState(() {
                         cellCount = 250;
                         state = emptyState(cellCount);
-                        cellSize = buildCellSize();
                       }),
                     ),
                     IconButton(
@@ -328,7 +315,6 @@ class _FallingSandState extends State<FallingSand>
                       onPressed: () => setState(() {
                         cellCount = 500;
                         state = emptyState(cellCount);
-                        cellSize = buildCellSize();
                       }),
                     ),
                   ],
@@ -356,19 +342,22 @@ class _FallingSandState extends State<FallingSand>
           ),
         ),
         ColorOptions(onColor: (c) => setState(() => color = c)),
-        Sandbox(
-          state: state,
-          size: size,
-          onPointerHover: positionToCellUpdate,
-          onPointerMove: positionToCellUpdate,
-          onPointerDown: (position) {
-            setState(() => canMakeAction = true);
-            positionToCellUpdate(position);
-          },
-          onPointerUp: (position) {
-            setState(() => canMakeAction = false);
-            positionToCellUpdate(position);
-          },
+        Expanded(
+          child: Sandbox(
+            state: state,
+            cellCount: cellCount,
+            sandKey: sandKey,
+            onPointerHover: positionToCellUpdate,
+            onPointerMove: positionToCellUpdate,
+            onPointerDown: (position) {
+              setState(() => canMakeAction = true);
+              positionToCellUpdate(position);
+            },
+            onPointerUp: (position) {
+              setState(() => canMakeAction = false);
+              positionToCellUpdate(position);
+            },
+          ),
         ),
       ],
     );
