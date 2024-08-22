@@ -32,6 +32,8 @@ class App extends StatelessWidget {
   }
 }
 
+const unselectedIconColor = Colors.black26;
+
 enum Action { fall, erase, tetromino }
 
 enum CursorSize { small, medium, big }
@@ -47,9 +49,9 @@ class _FallingSandState extends State<FallingSand>
     with TickerProviderStateMixin {
   late final rng = Random();
   late Ticker ticker;
-  late bool canMakeAction = false;
-  late Action currentAction = Action.fall;
-  late CursorSize cursorSize = CursorSize.small;
+  bool canMakeAction = false;
+  Action action = Action.fall;
+  CursorSize cursorSize = CursorSize.small;
 
   @override
   void initState() {
@@ -246,11 +248,11 @@ class _FallingSandState extends State<FallingSand>
     var x = max(0, offset.dx) ~/ cellSize.width;
     var y = max(0, offset.dy) ~/ cellSize.height;
 
-    if (currentAction != Action.tetromino) {
+    if (action != Action.tetromino) {
       x = min(x, cellCount - 1);
       y = min(y, cellCount - 1);
 
-      if (currentAction == Action.erase) {
+      if (action == Action.erase) {
         applyEraser(x, y);
         return;
       }
@@ -379,38 +381,38 @@ class _FallingSandState extends State<FallingSand>
                 child: Row(
                   children: [
                     TetrominoIconButton(
-                      enabled: currentAction == Action.tetromino,
+                      color: color,
+                      enabled: action == Action.tetromino,
                       onPressed: () => setState(
-                        () => currentAction = Action.tetromino,
+                        () => action = Action.tetromino,
                       ),
                     ),
                     IconButton(
+                      color:
+                          action == Action.erase ? color : unselectedIconColor,
                       tooltip: 'Eraser',
                       icon: SvgPicture.asset(
                         'assets/icons/ink_eraser.svg',
                         semanticsLabel: 'Eraser',
                         height: 26,
                         colorFilter: ColorFilter.mode(
-                          currentAction == Action.erase
-                              ? Theme.of(context).primaryColor
-                              : Theme.of(context).iconTheme.color!,
+                          action == Action.erase
+                              ? color ?? Theme.of(context).primaryColor
+                              : Colors.black,
                           BlendMode.srcIn,
                         ),
                       ),
-                      isSelected: currentAction == Action.erase,
+                      isSelected: action == Action.erase,
                       onPressed: () {
-                        setState(() => currentAction = Action.erase);
+                        setState(() => action = Action.erase);
                       },
                     ),
                     IconButton(
                       tooltip: 'Draw',
-                      icon: const Icon(
-                        Icons.edit,
-                      ),
-                      isSelected: currentAction == Action.fall,
-                      onPressed: () {
-                        setState(() => currentAction = Action.fall);
-                      },
+                      color: action == Action.fall ? color : null,
+                      icon: const Icon(Icons.edit),
+                      isSelected: action == Action.fall,
+                      onPressed: () => setState(() => action = Action.fall),
                     ),
                   ],
                 ),
@@ -429,51 +431,21 @@ class _FallingSandState extends State<FallingSand>
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              for (var i = 0; i < Colors.primaries.length; i++)
+              for (final primary in [...Colors.primaries, Colors.black])
                 IconButton(
                   icon: const Icon(Icons.square),
-                  tooltip: i < 9 ? '${i + 1}' : null,
-                  color: Colors.primaries[i],
-                  onPressed: () => setState(() => color = Colors.primaries[i]),
+                  color: primary,
+                  onPressed: () => setState(() => color = primary),
                 ),
-              IconButton(
-                icon: const Icon(Icons.square),
-                color: Colors.black,
-                onPressed: () => setState(() => color = Colors.black),
-              ),
             ],
           ),
         ),
-        DecoratedBox(
-          decoration: BoxDecoration(border: Border.all()),
-          child: Padding(
-            padding: const EdgeInsets.all(1),
-            child: ConstrainedBox(
-              constraints: BoxConstraints.tight(size),
-              child: Listener(
-                child: CustomPaint(
-                  size: size,
-                  painter: FallingSandPainter(state),
-                ),
-                onPointerHover: (event) =>
-                    positionToCellUpdate(event.localPosition),
-                onPointerMove: (event) =>
-                    positionToCellUpdate(event.localPosition),
-                onPointerDown: (event) {
-                  setState(() {
-                    canMakeAction = true;
-                  });
-                  positionToCellUpdate(event.localPosition);
-                },
-                onPointerUp: (event) {
-                  setState(() {
-                    canMakeAction = false;
-                  });
-                  positionToCellUpdate(event.localPosition);
-                },
-              ),
-            ),
-          ),
+        Sandbox(
+          state: state,
+          size: size,
+          onPointerDown: () => setState(() => canMakeAction = true),
+          onPointerUp: () => setState(() => canMakeAction = false),
+          onPosition: positionToCellUpdate,
         ),
       ],
     );
@@ -483,6 +455,52 @@ class _FallingSandState extends State<FallingSand>
     return Size(
       size.width / cellCount,
       size.height / cellCount,
+    );
+  }
+}
+
+class Sandbox extends StatelessWidget {
+  const Sandbox({
+    required this.state,
+    required this.size,
+    required this.onPointerUp,
+    required this.onPointerDown,
+    required this.onPosition,
+    super.key,
+  });
+
+  final List<List<Color?>> state;
+  final VoidCallback onPointerUp;
+  final VoidCallback onPointerDown;
+  final void Function(Offset) onPosition;
+  final Size size;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(border: Border.all()),
+      child: Padding(
+        padding: const EdgeInsets.all(1),
+        child: ConstrainedBox(
+          constraints: BoxConstraints.tight(size),
+          child: Listener(
+            child: CustomPaint(
+              size: size,
+              painter: FallingSandPainter(state),
+            ),
+            onPointerHover: (e) => onPosition(e.localPosition),
+            onPointerMove: (e) => onPosition(e.localPosition),
+            onPointerDown: (e) {
+              onPointerDown();
+              onPosition(e.localPosition);
+            },
+            onPointerUp: (e) {
+              onPointerDown();
+              onPosition(e.localPosition);
+            },
+          ),
+        ),
+      ),
     );
   }
 }
@@ -512,15 +530,20 @@ class ActionGroup extends StatelessWidget {
 class TetrominoIconButton extends StatelessWidget {
   const TetrominoIconButton({
     required this.enabled,
+    required this.color,
     super.key,
     this.onPressed,
   });
 
   final bool enabled;
+  final Color? color;
   final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) {
+    final iconColor = enabled
+        ? color ?? Theme.of(context).colorScheme.primary
+        : unselectedIconColor;
     return IconButton(
       tooltip: 'Tetromino',
       icon: SizedBox(
@@ -529,21 +552,13 @@ class TetrominoIconButton extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Expanded(
-              child: ColoredBox(
-                color: enabled ? Colors.black : Colors.black26,
-              ),
-            ),
+            Expanded(child: ColoredBox(color: iconColor)),
             Expanded(
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const Spacer(),
-                  Expanded(
-                    child: ColoredBox(
-                      color: enabled ? Colors.black : Colors.black26,
-                    ),
-                  ),
+                  Expanded(child: ColoredBox(color: iconColor)),
                   const Spacer(),
                 ],
               ),
