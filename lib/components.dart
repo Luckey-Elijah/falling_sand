@@ -222,3 +222,46 @@ class EditActionOptions extends StatelessWidget {
     );
   }
 }
+
+class SandBehaviorOptions extends StatelessWidget {
+  const SandBehaviorOptions({
+    required this.sandBehavior,
+    required this.color,
+    required this.onBehavior,
+    super.key,
+  });
+
+  final Color color;
+  final SandBehavior sandBehavior;
+  final ValueSetter<SandBehavior> onBehavior;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(),
+      ),
+      child: Row(
+        children: [
+          IconButton(
+            tooltip: 'Rolling/Gravity Sand',
+            color: sandBehavior == SandBehavior.rolling
+                ? color
+                : unselectedIconColor,
+            onPressed: () => onBehavior(SandBehavior.rolling),
+            icon: const Icon(Icons.landscape),
+          ),
+          IconButton(
+            tooltip: 'Stacking Sand',
+            color: sandBehavior == SandBehavior.stacking
+                ? color
+                : unselectedIconColor,
+            onPressed: () => onBehavior(SandBehavior.stacking),
+            icon: const Icon(Icons.stacked_bar_chart),
+          ),
+        ],
+      ),
+    );
+  }
+}

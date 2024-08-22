@@ -38,6 +38,8 @@ enum EditAction { fall, erase, tetromino }
 
 enum CursorSize { small, medium, big }
 
+enum SandBehavior { rolling, stacking }
+
 class FallingSand extends StatefulWidget {
   const FallingSand({super.key});
 
@@ -52,6 +54,7 @@ class _FallingSandState extends State<FallingSand>
   bool canMakeAction = false;
   EditAction action = EditAction.fall;
   CursorSize cursorSize = CursorSize.small;
+  SandBehavior sandBehavior = SandBehavior.rolling;
 
   @override
   void initState() {
@@ -84,12 +87,12 @@ class _FallingSandState extends State<FallingSand>
               state[col][row + 1] = color;
               state[col][row] = null;
             });
-          } else {
+          } else if (sandBehavior == SandBehavior.rolling) {
             // falling sand algorithm:
             // the mouse position and the pixel below are the
             //  side of a 2x2 square
             // if the second side on the left or the right is empty
-            // we move the top pixe lto the empty side (left priority)
+            // we move the top pixel to the empty side (left priority)
 
             // if we are not at the last row (bottom) and
             // if we are not offside on the left
@@ -130,7 +133,7 @@ class _FallingSandState extends State<FallingSand>
     size.height / cellCount,
   );
 
-  Color? color = Colors.black;
+  Color color = Colors.black;
 
   bool tetrominoEnabled = false;
 
@@ -370,6 +373,12 @@ class _FallingSandState extends State<FallingSand>
                 onAction: (a) => setState(() => action = a),
                 action: action,
                 color: color,
+              ),
+              const SizedBox(width: 8),
+              SandBehaviorOptions(
+                color: color,
+                onBehavior: (value) => setState(() => sandBehavior = value),
+                sandBehavior: sandBehavior,
               ),
               const SizedBox(width: 8),
               IconButton.outlined(
