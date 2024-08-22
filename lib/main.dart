@@ -288,18 +288,6 @@ class _FallingSandState extends State<FallingSand>
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              for (var i = 0; i < Colors.primaries.length; i++)
-                IconButton(
-                  icon: const Icon(Icons.square),
-                  tooltip: i < 9 ? '${i + 1}' : null,
-                  color: Colors.primaries[i],
-                  onPressed: () => setState(() => color = Colors.primaries[i]),
-                ),
-              IconButton(
-                icon: const Icon(Icons.square),
-                color: Colors.black,
-                onPressed: () => setState(() => color = Colors.black),
-              ),
               DecoratedBox(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(8),
@@ -383,7 +371,6 @@ class _FallingSandState extends State<FallingSand>
                 ),
               ),
               const SizedBox(width: 8),
-              const SizedBox(width: 8),
               DecoratedBox(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(8),
@@ -391,42 +378,11 @@ class _FallingSandState extends State<FallingSand>
                 ),
                 child: Row(
                   children: [
-                    IconButton(
-                      tooltip: 'Tetromino',
-                      icon: SizedBox(
-                        height: 20,
-                        width: 25,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Expanded(
-                              child: ColoredBox(
-                                color: currentAction == Action.tetromino
-                                    ? Colors.black
-                                    : Colors.black26,
-                              ),
-                            ),
-                            Expanded(
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  const Spacer(),
-                                  Expanded(
-                                    child: ColoredBox(
-                                      color: currentAction == Action.tetromino
-                                          ? Colors.black
-                                          : Colors.black26,
-                                    ),
-                                  ),
-                                  const Spacer(),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
+                    TetrominoIconButton(
+                      enabled: currentAction == Action.tetromino,
+                      onPressed: () => setState(
+                        () => currentAction = Action.tetromino,
                       ),
-                      onPressed: () =>
-                          setState(() => currentAction = Action.tetromino),
                     ),
                     IconButton(
                       tooltip: 'Eraser',
@@ -461,8 +417,29 @@ class _FallingSandState extends State<FallingSand>
               ),
               const SizedBox(width: 8),
               IconButton.outlined(
-                icon: const Icon(Icons.clear),
+                icon: const Icon(Icons.delete_forever),
+                tooltip: 'Empty Sandbox',
                 onPressed: () => setState(() => state = emptyState(cellCount)),
+              ),
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.all(8),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (var i = 0; i < Colors.primaries.length; i++)
+                IconButton(
+                  icon: const Icon(Icons.square),
+                  tooltip: i < 9 ? '${i + 1}' : null,
+                  color: Colors.primaries[i],
+                  onPressed: () => setState(() => color = Colors.primaries[i]),
+                ),
+              IconButton(
+                icon: const Icon(Icons.square),
+                color: Colors.black,
+                onPressed: () => setState(() => color = Colors.black),
               ),
             ],
           ),
@@ -506,6 +483,75 @@ class _FallingSandState extends State<FallingSand>
     return Size(
       size.width / cellCount,
       size.height / cellCount,
+    );
+  }
+}
+
+class ActionGroup extends StatelessWidget {
+  const ActionGroup({
+    super.key,
+    this.children = const [],
+  });
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(),
+      ),
+      child: Row(
+        children: children,
+      ),
+    );
+  }
+}
+
+class TetrominoIconButton extends StatelessWidget {
+  const TetrominoIconButton({
+    required this.enabled,
+    super.key,
+    this.onPressed,
+  });
+
+  final bool enabled;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      tooltip: 'Tetromino',
+      icon: SizedBox(
+        height: 20,
+        width: 25,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: ColoredBox(
+                color: enabled ? Colors.black : Colors.black26,
+              ),
+            ),
+            Expanded(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Spacer(),
+                  Expanded(
+                    child: ColoredBox(
+                      color: enabled ? Colors.black : Colors.black26,
+                    ),
+                  ),
+                  const Spacer(),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+      onPressed: onPressed,
     );
   }
 }
