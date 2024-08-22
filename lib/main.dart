@@ -84,6 +84,31 @@ class _FallingSandState extends State<FallingSand>
               state[col][row + 1] = color;
               state[col][row] = null;
             });
+          } else {
+            // falling sand algorithm:
+            // the mouse position and the pixel below are the
+            //  side of a 2x2 square
+            // if the second side on the left or the right is empty
+            // we move the top pixe lto the empty side (left priority)
+
+            // if we are not at the last row (bottom) and
+            // if we are not offside on the left
+            if (row + 1 < state[col].length &&
+                col - 1 >= 0 &&
+                state[col - 1][row] == null &&
+                state[col - 1][row + 1] == null) {
+              state[col][row] = null;
+              state[col - 1][row] = color;
+            }
+            // if we are not at the last row (bottom) and
+            // if we are not offside on the right
+            else if (row + 1 < state[col].length &&
+                col + 1 < state.length &&
+                state[col + 1][row] == null &&
+                state[col + 1][row + 1] == null) {
+              state[col][row] = null;
+              state[col + 1][row] = color;
+            }
           }
         }
       }
