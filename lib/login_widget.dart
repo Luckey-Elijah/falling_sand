@@ -16,6 +16,24 @@ class _LoginWidgetState extends State<LoginWidget> {
   bool loading = false;
   String? error;
 
+  void setErrorMessage(ClientException exception) {
+    final data = exception.response;
+
+    if (data case {'data': {'password': {'message': final String message}}}) {
+      return setState(() => error = message);
+    }
+
+    if (data case {'data': {'identity': {'message': final String message}}}) {
+      return setState(() => error = message);
+    }
+
+    if (data case {'message': final String message}) {
+      return setState(() => error = message);
+    }
+
+    return setState(() => error = '${exception.response}');
+  }
+
   Future<void> login() async {
     RecordAuth? recordAuth;
     try {
@@ -25,7 +43,7 @@ class _LoginWidgetState extends State<LoginWidget> {
             password.text,
           );
     } on ClientException catch (e) {
-      setState(() => error = '${e.response}');
+      setErrorMessage(e);
     } finally {
       setState(() => loading = false);
     }
@@ -52,7 +70,7 @@ class _LoginWidgetState extends State<LoginWidget> {
         },
       );
     } on ClientException catch (e) {
-      setState(() => error = '${e.response}');
+      setErrorMessage(e);
     } finally {
       setState(() => loading = false);
     }
