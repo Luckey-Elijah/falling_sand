@@ -33,19 +33,19 @@ class _ConnectionWidgetState extends State<ConnectionWidget> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
+                    OutlinedButton(
+                      child: const Text('Browse Creations'),
+                      onPressed: () async {
+                        await showAdaptiveDialog<void>(
+                          context: context,
+                          builder: (context) {
+                            return const BrowseWidget();
+                          },
+                        );
+                      },
+                    ),
                     if (isNotAuth(data)) _buildLoginButton(),
                     if (isAuth(data)) ...[
-                      OutlinedButton(
-                        child: const Text('Browse Creations'),
-                        onPressed: () async {
-                          await showAdaptiveDialog<void>(
-                            context: context,
-                            builder: (context) {
-                              return const BrowseWidget();
-                            },
-                          );
-                        },
-                      ),
                       _buildSubmitCreationButton(data),
                       _buildLogoutButton(),
                     ],
