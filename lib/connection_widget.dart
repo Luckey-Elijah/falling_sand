@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:falling_sand/creation_model.dart';
 import 'package:falling_sand/falling_sand_painter.dart';
 import 'package:falling_sand/login_widget.dart';
@@ -107,19 +109,21 @@ class _ConnectionWidgetState extends State<ConnectionWidget> {
   Widget _buildLoginButton() {
     return TextButton(
       child: const Text('Login'),
-      onPressed: () async {
-        await showAdaptiveDialog<void>(
-          context: context,
-          builder: (context) {
-            return const LoginWidget();
-          },
-        );
-      },
+      onPressed: () async => showAdaptiveDialog<void>(
+        context: context,
+        builder: (context) {
+          return const LoginWidget();
+        },
+      ),
     );
   }
 
   Widget _buildLogoutButton() {
     return TextButton(
+      style: TextButton.styleFrom(
+        foregroundColor: Colors.red,
+        backgroundColor: Colors.red.shade100,
+      ),
       child: const Text('Logout'),
       onPressed: () => pb.authStore.clear(),
     );
@@ -206,13 +210,13 @@ class _BrowseWidgetState extends State<BrowseWidget> {
                       return GridView.builder(
                         itemCount: snapshot.data?.length,
                         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: crossAxisCount,
+                          crossAxisCount: max(crossAxisCount, 1),
                         ),
                         itemBuilder: (context, index) {
                           final state = snapshot.data![index].data;
                           final name = snapshot.data![index].user;
                           return Padding(
-                            padding: const EdgeInsets.all(36),
+                            padding: const EdgeInsets.all(24),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
