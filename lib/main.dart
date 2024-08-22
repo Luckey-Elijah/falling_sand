@@ -5,6 +5,7 @@ import 'package:falling_sand/falling_sand_painter.dart';
 import 'package:falling_sand/tetromino_data.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:pocketbase/pocketbase.dart';
 
 void main() => runApp(const App());
@@ -31,6 +32,10 @@ class App extends StatelessWidget {
   }
 }
 
+enum Action { fall, erase, tetromino }
+
+enum CursorSize { small, medium, big }
+
 class FallingSand extends StatefulWidget {
   const FallingSand({super.key});
 
@@ -42,6 +47,9 @@ class _FallingSandState extends State<FallingSand>
     with TickerProviderStateMixin {
   late final rng = Random();
   late Ticker ticker;
+  late bool canMakeAction = false;
+  late Action currentAction = Action.fall;
+  late CursorSize cursorSize = CursorSize.small;
 
   @override
   void initState() {
@@ -92,17 +100,162 @@ class _FallingSandState extends State<FallingSand>
 
   bool tetrominoEnabled = false;
 
+  void applyEraser(int x, int y) {
+    switch (cursorSize) {
+      case CursorSize.small:
+        // 1x1 square
+        setState(() => state[x][y] = null);
+
+      case CursorSize.medium:
+        // 2x2 square and the top left corner is the mouse position
+        setState(() {
+          state[x][y] = null;
+
+          if (state.length > x + 1) {
+            state[x + 1][y] = null;
+          }
+          if (state[x].length > y + 1) {
+            state[x][y + 1] = null;
+          }
+          if (state.length > x + 1 && state[x + 1].length > y + 1) {
+            state[x + 1][y + 1] = null;
+          }
+        });
+
+      case CursorSize.big:
+        // 3x3 square and the center is the mouse position
+        setState(() {
+          // row above the mouse
+          if (x - 1 >= 0 && y - 1 >= 0) {
+            state[x - 1][y - 1] = null;
+          }
+          if (y - 1 >= 0) {
+            state[x][y - 1] = null;
+          }
+          if (state.length > x + 1 && y - 1 >= 0) {
+            state[x + 1][y - 1] = null;
+          }
+
+          // row at the same level than the mouse
+
+          if (x - 1 >= 0) {
+            state[x - 1][y] = null;
+          }
+
+          state[x][y] = null;
+
+          if (state.length > x + 1) {
+            state[x + 1][y] = null;
+          }
+
+          // row under the mouse
+
+          if (x - 1 >= 0 && state[x - 1].length > y + 1) {
+            state[x - 1][y + 1] = null;
+          }
+
+          if (state[x].length > y + 1) {
+            state[x][y + 1] = null;
+          }
+
+          if (state.length > x + 1 && state[x + 1].length > y + 1) {
+            state[x + 1][y + 1] = null;
+          }
+        });
+    }
+  }
+
+  void applyPen(int x, int y, Color? value) {
+    switch (cursorSize) {
+      case CursorSize.small:
+        // 1x1 square
+        setState(() => state[x][y] = value);
+
+      case CursorSize.medium:
+        // 2x2 square and the top left corner is the mouse position
+        setState(() {
+          state[x][y] = value;
+
+          if (state.length > x + 1 && state[x + 1][y] == null) {
+            state[x + 1][y] = value;
+          }
+          if (state[x].length > y + 1 && state[x][y + 1] == null) {
+            state[x][y + 1] = value;
+          }
+          if (state.length > x + 1 &&
+              state[x + 1].length > y + 1 &&
+              state[x + 1][y + 1] == null) {
+            state[x + 1][y + 1] = value;
+          }
+        });
+
+      case CursorSize.big:
+        // 3x3 square and the center is the mouse position
+        setState(() {
+          // row above the mouse
+          if (x - 1 >= 0 && y - 1 >= 0 && state[x - 1][y - 1] == null) {
+            state[x - 1][y - 1] = value;
+          }
+          if (y - 1 >= 0 && state[x][y - 1] == null) {
+            state[x][y - 1] = value;
+          }
+          if (state.length > x + 1 &&
+              y - 1 >= 0 &&
+              state[x + 1][y - 1] == null) {
+            state[x + 1][y - 1] = value;
+          }
+
+          // row at the same level than the mouse
+
+          if (x - 1 >= 0 && state[x - 1][y] == null) {
+            state[x - 1][y] = value;
+          }
+
+          state[x][y] = value;
+
+          if (state.length > x + 1 && state[x + 1][y] == null) {
+            state[x + 1][y] = value;
+          }
+
+          // row under the mouse
+
+          if (x - 1 >= 0 &&
+              state[x - 1].length > y + 1 &&
+              state[x - 1][y + 1] == null) {
+            state[x - 1][y + 1] = value;
+          }
+
+          if (state[x].length > y + 1 && state[x][y + 1] == null) {
+            state[x][y + 1] = value;
+          }
+
+          if (state.length > x + 1 &&
+              state[x + 1].length > y + 1 &&
+              state[x + 1][y + 1] == null) {
+            state[x + 1][y + 1] = value;
+          }
+        });
+    }
+  }
+
   void positionToCellUpdate(Offset offset) {
+    if (!canMakeAction) {
+      return;
+    }
+
     var x = max(0, offset.dx) ~/ cellSize.width;
     var y = max(0, offset.dy) ~/ cellSize.height;
 
-    if (!tetrominoEnabled) {
+    if (currentAction != Action.tetromino) {
       x = min(x, cellCount - 1);
       y = min(y, cellCount - 1);
 
-      if (state[x][y] != null) return;
+      if (currentAction == Action.erase) {
+        applyEraser(x, y);
+        return;
+      }
 
-      setState(() => state[x][y] = color);
+      applyPen(x, y, color);
 
       return;
     }
@@ -185,41 +338,126 @@ class _FallingSandState extends State<FallingSand>
                 ),
               ),
               const SizedBox(width: 8),
-              IconButton.outlined(
-                tooltip: 'Tetromino',
-                icon: SizedBox(
-                  height: 20,
-                  width: 25,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Expanded(
-                        child: ColoredBox(
-                          color:
-                              tetrominoEnabled ? Colors.black : Colors.black26,
-                        ),
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(),
+                ),
+                child: Row(
+                  children: [
+                    IconButton(
+                      tooltip: 'Small pen',
+                      icon: Icon(
+                        Icons.circle,
+                        size: 12,
+                        color: cursorSize == CursorSize.small ? color : null,
                       ),
-                      Expanded(
-                        child: Row(
+                      onPressed: () => setState(() {
+                        cursorSize = CursorSize.small;
+                      }),
+                    ),
+                    IconButton(
+                      icon: Icon(
+                        Icons.circle,
+                        size: 16,
+                        color: cursorSize == CursorSize.medium ? color : null,
+                      ),
+                      tooltip: 'Medium pen',
+                      onPressed: () => setState(() {
+                        cursorSize = CursorSize.medium;
+                      }),
+                    ),
+                    IconButton(
+                      tooltip: 'Big pen',
+                      icon: Icon(
+                        Icons.circle,
+                        size: 20,
+                        color: cursorSize == CursorSize.big ? color : null,
+                      ),
+                      isSelected: cursorSize == CursorSize.big,
+                      onPressed: () => setState(() {
+                        cursorSize = CursorSize.big;
+                      }),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              const SizedBox(width: 8),
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(),
+                ),
+                child: Row(
+                  children: [
+                    IconButton(
+                      tooltip: 'Tetromino',
+                      icon: SizedBox(
+                        height: 20,
+                        width: 25,
+                        child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            const Spacer(),
                             Expanded(
                               child: ColoredBox(
-                                color: tetrominoEnabled
+                                color: currentAction == Action.tetromino
                                     ? Colors.black
                                     : Colors.black26,
                               ),
                             ),
-                            const Spacer(),
+                            Expanded(
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  const Spacer(),
+                                  Expanded(
+                                    child: ColoredBox(
+                                      color: currentAction == Action.tetromino
+                                          ? Colors.black
+                                          : Colors.black26,
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                ],
+                              ),
+                            ),
                           ],
                         ),
                       ),
-                    ],
-                  ),
+                      onPressed: () =>
+                          setState(() => currentAction = Action.tetromino),
+                    ),
+                    IconButton(
+                      tooltip: 'Eraser',
+                      icon: SvgPicture.asset(
+                        'assets/icons/ink_eraser.svg',
+                        semanticsLabel: 'Eraser',
+                        height: 26,
+                        colorFilter: ColorFilter.mode(
+                          currentAction == Action.erase
+                              ? Theme.of(context).primaryColor
+                              : Theme.of(context).iconTheme.color!,
+                          BlendMode.srcIn,
+                        ),
+                      ),
+                      isSelected: currentAction == Action.erase,
+                      onPressed: () {
+                        setState(() => currentAction = Action.erase);
+                      },
+                    ),
+                    IconButton(
+                      tooltip: 'Draw',
+                      icon: const Icon(
+                        Icons.edit,
+                      ),
+                      isSelected: currentAction == Action.fall,
+                      onPressed: () {
+                        setState(() => currentAction = Action.fall);
+                      },
+                    ),
+                  ],
                 ),
-                onPressed: () =>
-                    setState(() => tetrominoEnabled = !tetrominoEnabled),
               ),
               const SizedBox(width: 8),
               IconButton.outlined(
@@ -244,10 +482,18 @@ class _FallingSandState extends State<FallingSand>
                     positionToCellUpdate(event.localPosition),
                 onPointerMove: (event) =>
                     positionToCellUpdate(event.localPosition),
-                onPointerDown: (event) =>
-                    positionToCellUpdate(event.localPosition),
-                onPointerUp: (event) =>
-                    positionToCellUpdate(event.localPosition),
+                onPointerDown: (event) {
+                  setState(() {
+                    canMakeAction = true;
+                  });
+                  positionToCellUpdate(event.localPosition);
+                },
+                onPointerUp: (event) {
+                  setState(() {
+                    canMakeAction = false;
+                  });
+                  positionToCellUpdate(event.localPosition);
+                },
               ),
             ),
           ),
