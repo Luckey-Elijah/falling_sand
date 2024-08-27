@@ -1,0 +1,100 @@
+[
+  {
+    "id": "_pb_users_auth_",
+    "type": "auth",
+    "created": "2024-08-21 02:26:44.108Z",
+    "updated": "2024-08-21 19:05:27.847Z",
+    "name": "users",
+    "system": false,
+    "listRule": "",
+    "viewRule": "",
+    "createRule": "",
+    "updateRule": "id = @request.auth.id",
+    "deleteRule": "id = @request.auth.id",
+    "schema": [
+      {
+        "id": "users_name",
+        "name": "name",
+        "type": "text",
+        "system": false,
+        "required": false,
+        "presentable": false,
+        "options": { "min": null, "max": null, "pattern": "" }
+      },
+      {
+        "id": "users_avatar",
+        "name": "avatar",
+        "type": "file",
+        "system": false,
+        "required": false,
+        "presentable": false,
+        "options": {
+          "mimeTypes": [
+            "image/jpeg",
+            "image/png",
+            "image/svg+xml",
+            "image/gif",
+            "image/webp"
+          ],
+          "thumbs": null,
+          "maxSelect": 1,
+          "maxSize": 5242880,
+          "protected": false
+        }
+      }
+    ],
+    "indexes": [],
+    "options": {
+      "allowEmailAuth": true,
+      "allowOAuth2Auth": true,
+      "allowUsernameAuth": true,
+      "exceptEmailDomains": null,
+      "manageRule": null,
+      "minPasswordLength": 8,
+      "onlyEmailDomains": null,
+      "onlyVerified": false,
+      "requireEmail": false
+    }
+  },
+  {
+    "id": "s6k3m4b590b1z4o",
+    "type": "base",
+    "created": "2024-08-21 02:27:12.382Z",
+    "updated": "2024-08-22 03:22:10.279Z",
+    "name": "creations",
+    "system": false,
+    "listRule": "",
+    "viewRule": "@request.auth.id != \"\"",
+    "createRule": "@request.auth.id != \"\"",
+    "updateRule": "",
+    "deleteRule": "@request.auth.id = user.id",
+    "schema": [
+      {
+        "id": "dup1prtz",
+        "name": "user",
+        "type": "relation",
+        "system": false,
+        "required": true,
+        "presentable": false,
+        "options": {
+          "collectionId": "_pb_users_auth_",
+          "cascadeDelete": true,
+          "minSelect": null,
+          "maxSelect": 1,
+          "displayFields": null
+        }
+      },
+      {
+        "id": "fnnso8lf",
+        "name": "data",
+        "type": "json",
+        "system": false,
+        "required": true,
+        "presentable": false,
+        "options": { "maxSize": 2000000 }
+      }
+    ],
+    "indexes": [],
+    "options": {}
+  }
+]
