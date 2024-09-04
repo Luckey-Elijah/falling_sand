@@ -18,39 +18,16 @@ class ConnectionWidget extends StatefulWidget {
 class _ConnectionWidgetState extends State<ConnectionWidget> {
   final stream = pb.authStore.onChange;
 
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Center(child: widget.child),
-        StreamBuilder<AuthStoreEvent?>(
-          stream: stream,
-          builder: (context, snapshot) {
-            final data = snapshot.data;
+  late Future<bool> checkHealthFuture = checkHealth(0);
 
-            return Align(
-              alignment: Alignment.bottomRight,
-              child: Padding(
-                padding: const EdgeInsets.all(8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    const BrowseCreationsButton(),
-                    const SizedBox(width: 8),
-                    if (isNotAuth(data)) _buildLoginButton(),
-                    if (isAuth(data)) ...[
-                      _buildSubmitCreationButton(data),
-                      const SizedBox(width: 8),
-                      _buildLogoutButton(),
-                    ],
-                  ],
-                ),
-              ),
-            );
-          },
-        ),
-      ],
-    );
+  Future<bool> checkHealth(int count) async {
+    if (count > 1) return false;
+    try {
+      final HealthCheck(:code) = await pb.health.check();
+      return code == 200 || await checkHealth(count + 1);
+    } catch (e) {
+      return checkHealth(count + 1);
+    }
   }
 
   Future<void> submitCreation(AuthStoreEvent? data) async {
@@ -88,13 +65,6 @@ class _ConnectionWidgetState extends State<ConnectionWidget> {
     }
   }
 
-  Widget _buildSubmitCreationButton(AuthStoreEvent? data) {
-    return OutlinedButton(
-      onPressed: () => submitCreation(data),
-      child: const Text('Submit Creation'),
-    );
-  }
-
   bool isAuth(AuthStoreEvent? data) {
     if (data?.model == null) return false;
     if (data?.token.isEmpty ?? false) return false;
@@ -104,6 +74,76 @@ class _ConnectionWidgetState extends State<ConnectionWidget> {
 
   bool isNotAuth(AuthStoreEvent? data) {
     return data == null || data.token.isEmpty == true || data.model == null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        Center(child: widget.child),
+        StreamBuilder<AuthStoreEvent?>(
+          stream: stream,
+          builder: (context, snapshot) {
+            final data = snapshot.data;
+
+            return Align(
+              alignment: Alignment.bottomRight,
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    const BrowseCreationsButton(),
+                    const SizedBox(width: 8),
+                    if (isNotAuth(data)) _buildLoginButton(),
+                    if (isAuth(data)) ...[
+                      _buildSubmitCreationButton(data),
+                      const SizedBox(width: 8),
+                      _buildLogoutButton(),
+                    ],
+                    const SizedBox(width: 8),
+                    FutureBuilder<bool>(
+                      future: checkHealthFuture,
+                      builder: (context, snapshot) {
+                        return switch (snapshot) {
+                          AsyncSnapshot(:final bool data) when data =>
+                            IconButton(
+                              tooltip: 'API is healthy. click to refresh',
+                              onPressed: () => setState(() {
+                                checkHealthFuture = checkHealth(0);
+                              }),
+                              icon: const Icon(Icons.health_and_safety),
+                            ),
+                          AsyncSnapshot(:final bool data) when !data =>
+                            IconButton(
+                              tooltip: 'API is not healthy. click to refresh',
+                              onPressed: () => setState(() {
+                                checkHealthFuture = checkHealth(0);
+                              }),
+                              icon: const Icon(Icons.sick),
+                            ),
+                          _ => const SizedBox.square(
+                              dimension: 24,
+                              child: CircularProgressIndicator(),
+                            ),
+                        };
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSubmitCreationButton(AuthStoreEvent? data) {
+    return OutlinedButton(
+      onPressed: () => submitCreation(data),
+      child: const Text('Submit Creation'),
+    );
   }
 
   Widget _buildLoginButton() {
