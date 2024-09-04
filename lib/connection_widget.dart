@@ -204,7 +204,7 @@ class _BrowseWidgetState extends State<BrowseWidget> {
           sort: '-created',
         );
     final data = resultList.items.map(
-      (item) => {...item.data, ...item.expand},
+      (item) => {...item.data, ...item.expand, 'id': item.id},
     );
     final creations = data.map(CreationModel.fromJson).toList();
 
@@ -255,18 +255,16 @@ class _BrowseWidgetState extends State<BrowseWidget> {
                         itemBuilder: (context, index) {
                           final state = snapshot.data![index].data;
                           final name = snapshot.data![index].user;
+                          final id = snapshot.data![index].id;
                           return Padding(
                             padding: const EdgeInsets.all(24),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                if (name != null)
-                                  Align(
-                                    alignment: Alignment.centerLeft,
-                                    child: NameTag(name: name),
-                                  ),
-                                if (name == null)
-                                  const NameTag(name: 'Unknown submission'),
+                                CreationViewHeader(
+                                  id: id,
+                                  name: name,
+                                ),
                                 Expanded(
                                   child: InkWell(
                                     onTap: () => showDialog<void>(
@@ -300,6 +298,136 @@ class _BrowseWidgetState extends State<BrowseWidget> {
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+class CreationViewHeader extends StatelessWidget {
+  const CreationViewHeader({
+    required this.name,
+    required this.id,
+    super.key,
+  });
+
+  final String? name;
+  final String? id;
+
+  @override
+  Widget build(BuildContext context) {
+    final id = this.id;
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        NameTag(
+          name: name ?? 'Unknown submission',
+        ),
+        if (id != null) ReportCreation(id: id),
+      ],
+    );
+  }
+}
+
+class ReportCreation extends StatelessWidget {
+  const ReportCreation({
+    required this.id,
+    super.key,
+  });
+
+  final String id;
+
+  @override
+  Widget build(BuildContext context) {
+    final authModel = pb.authStore.model;
+
+    final authenticated = (authModel is RecordModel) && pb.authStore.isValid;
+
+    final tooltip =
+        '${authenticated ? 'R' : 'You must be logged in to r'}eport this '
+        'creation for harmful content.';
+
+    return IconButton(
+      tooltip: tooltip,
+      onPressed: authenticated
+          ? () async {
+              final reason = await showAdaptiveDialog<String?>(
+                context: context,
+                builder: (context) => const ReportDialogField(),
+              );
+
+              if (reason == null) return;
+
+              try {
+                await pb.collection('reports').create(
+                  body: {
+                    'reporter': authModel.id,
+                    'creation': id,
+                    'reason': reason,
+                  },
+                );
+              } catch (e) {
+                debugPrint('$e');
+              }
+
+              if (!context.mounted) return;
+            }
+          : null,
+      icon: const Icon(Icons.report),
+    );
+  }
+}
+
+class ReportDialogField extends StatefulWidget {
+  const ReportDialogField({
+    super.key,
+  });
+
+  @override
+  State<ReportDialogField> createState() => _ReportDialogFieldState();
+}
+
+class _ReportDialogFieldState extends State<ReportDialogField> {
+  final controller = TextEditingController();
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 480),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Report Creation'),
+                  CloseButton(),
+                ],
+              ),
+              TextField(
+                controller: controller,
+                decoration: const InputDecoration(hintText: 'reason'),
+                onSubmitted: (value) => Navigator.of(context).pop(value),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(controller.text),
+                    child: const Text('Report'),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('Cancel'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
