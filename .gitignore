@@ -44,3 +44,5 @@ app.*.map.json
 
 # local dev pocketbase items
 pocketbase
+pb_data
+pb_migrations
