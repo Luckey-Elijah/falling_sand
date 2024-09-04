@@ -5,6 +5,7 @@ class CreationModel {
   const CreationModel({
     required this.data,
     this.user,
+    this.id,
   });
 
   factory CreationModel.fromJson(Map<String, dynamic> source) {
@@ -14,8 +15,10 @@ class CreationModel {
       final maybeUsername = maybeUser.firstOrNull?.data['username'];
       if (maybeUsername is String) username = maybeUsername;
     }
-    if (source case {'data': final List<dynamic> data}) {
+    if (source
+        case {'data': final List<dynamic> data, 'id': final String? id}) {
       return CreationModel(
+        id: id,
         user: username,
         data: data
             .map((c) => (c as List<dynamic>).cast<int?>())
@@ -34,4 +37,5 @@ class CreationModel {
   }
   final List<List<Color?>> data;
   final String? user;
+  final String? id;
 }
