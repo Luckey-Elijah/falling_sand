@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:falling_sand/components.dart';
 import 'package:falling_sand/connection_widget.dart';
 import 'package:falling_sand/sandbox.dart';
+import 'package:falling_sand/tab_actions/ground_actions.dart';
 import 'package:falling_sand/tetromino_data.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -13,6 +14,7 @@ void main() => runApp(const App());
 final creation = ValueNotifier(_FallingSandState.emptyState(50));
 
 final pb = PocketBase('https://falling-san.pockethost.io');
+final random = Random();
 
 class App extends StatelessWidget {
   const App({super.key});
@@ -55,6 +57,7 @@ class _FallingSandState extends State<FallingSand>
   EditAction action = EditAction.fall;
   CursorSize cursorSize = CursorSize.small;
   SandBehavior sandBehavior = SandBehavior.rolling;
+  PixelElement? _selectedElement;
 
   @override
   void initState() {
@@ -76,17 +79,37 @@ class _FallingSandState extends State<FallingSand>
   }
 
   void tick(Duration duration) {
+    final newState = emptyState(cellCount);
+
+    for (var i = 0; i < cellCount; i++) {
+      for (var j = 0; j < cellCount; j++) {
+        newState[i][j] = state[i][j];
+      }
+    }
+
     for (var col = 0; col < cellCount; col++) {
       for (var row = cellCount - 1; row >= 0; row--) {
         final color = state[col][row];
+
         if (color != null) {
+          final hasSomethingDown = row + 1 < cellCount;
           final canMoveDown =
-              row + 1 < cellCount && state[col][row + 1] == null;
-          if (canMoveDown) {
-            setState(() {
-              state[col][row + 1] = color;
-              state[col][row] = null;
-            });
+              hasSomethingDown && newState[col][row + 1] == null;
+
+          final element = getElementByColor(color);
+
+          final belowColor = hasSomethingDown ? newState[col][row + 1] : null;
+          final belowElement = getElementByColor(belowColor);
+
+          if (belowElement != null &&
+              elementState[element]! == ElementState.solid &&
+              elementState[belowElement]! == ElementState.liquid &&
+              density[element]! > density[belowElement]!) {
+            newState[col][row + 1] = color;
+            newState[col][row] = belowColor;
+          } else if (canMoveDown) {
+            newState[col][row + 1] = color;
+            newState[col][row] = null;
           } else if (sandBehavior == SandBehavior.rolling) {
             // falling sand algorithm:
             // the mouse position and the pixel below are the
@@ -96,26 +119,50 @@ class _FallingSandState extends State<FallingSand>
 
             // if we are not at the last row (bottom) and
             // if we are not offside on the left
-            if (row + 1 < state[col].length &&
-                col - 1 >= 0 &&
-                state[col - 1][row] == null &&
-                state[col - 1][row + 1] == null) {
-              state[col][row] = null;
-              state[col - 1][row] = color;
+
+            if (element == PixelElement.dirt || element == PixelElement.sand) {
+              if (row + 1 < state[col].length &&
+                  col - 1 >= 0 &&
+                  newState[col - 1][row] == null &&
+                  newState[col - 1][row + 1] == null) {
+                newState[col][row] = null;
+                newState[col - 1][row] = color;
+              }
+              // if we are not at the last row (bottom) and
+              // if we are not offside on the right
+              else if (row + 1 < newState[col].length &&
+                  col + 1 < newState.length &&
+                  newState[col + 1][row] == null &&
+                  newState[col + 1][row + 1] == null) {
+                newState[col][row] = null;
+                newState[col + 1][row] = color;
+              }
             }
-            // if we are not at the last row (bottom) and
-            // if we are not offside on the right
-            else if (row + 1 < state[col].length &&
-                col + 1 < state.length &&
-                state[col + 1][row] == null &&
-                state[col + 1][row + 1] == null) {
-              state[col][row] = null;
-              state[col + 1][row] = color;
+
+            if (element == PixelElement.water) {
+              final canGoLeft = col - 1 >= 0 && newState[col - 1][row] == null;
+              final canGoRight =
+                  col + 1 < newState.length && newState[col + 1][row] == null;
+
+              if (canGoLeft && canGoRight) {
+                newState[col][row] = null;
+                newState[col - 1][row] = color;
+              } else if (canGoLeft) {
+                newState[col][row] = null;
+                newState[col - 1][row] = color;
+              } else if (canGoRight) {
+                newState[col][row] = null;
+                newState[col + 1][row] = color;
+              }
             }
           }
         }
       }
     }
+
+    setState(() {
+      state = newState;
+    });
   }
 
   int cellCount = 50;
@@ -202,27 +249,39 @@ class _FallingSandState extends State<FallingSand>
     }
   }
 
-  void applyPen(int x, int y, Color? value) {
+  void applyPen(int x, int y, Color? v) {
     switch (cursorSize) {
       case CursorSize.small:
         // 1x1 square
-        setState(() => state[x][y] = value);
+        setState(
+          () => state[x][y] = (_selectedElement == null)
+              ? v
+              : getElementColor(_selectedElement!),
+        );
 
       case CursorSize.medium:
         // 2x2 square and the top left corner is the mouse position
         setState(() {
-          state[x][y] = value;
+          state[x][y] = (_selectedElement == null)
+              ? v
+              : getElementColor(_selectedElement!);
 
           if (state.length > x + 1 && state[x + 1][y] == null) {
-            state[x + 1][y] = value;
+            state[x + 1][y] = (_selectedElement == null)
+                ? v
+                : getElementColor(_selectedElement!);
           }
           if (state[x].length > y + 1 && state[x][y + 1] == null) {
-            state[x][y + 1] = value;
+            state[x][y + 1] = (_selectedElement == null)
+                ? v
+                : getElementColor(_selectedElement!);
           }
           if (state.length > x + 1 &&
               state[x + 1].length > y + 1 &&
               state[x + 1][y + 1] == null) {
-            state[x + 1][y + 1] = value;
+            state[x + 1][y + 1] = (_selectedElement == null)
+                ? v
+                : getElementColor(_selectedElement!);
           }
         });
 
@@ -231,27 +290,39 @@ class _FallingSandState extends State<FallingSand>
         setState(() {
           // row above the mouse
           if (x - 1 >= 0 && y - 1 >= 0 && state[x - 1][y - 1] == null) {
-            state[x - 1][y - 1] = value;
+            state[x - 1][y - 1] = (_selectedElement == null)
+                ? v
+                : getElementColor(_selectedElement!);
           }
           if (y - 1 >= 0 && state[x][y - 1] == null) {
-            state[x][y - 1] = value;
+            state[x][y - 1] = (_selectedElement == null)
+                ? v
+                : getElementColor(_selectedElement!);
           }
           if (state.length > x + 1 &&
               y - 1 >= 0 &&
               state[x + 1][y - 1] == null) {
-            state[x + 1][y - 1] = value;
+            state[x + 1][y - 1] = (_selectedElement == null)
+                ? v
+                : getElementColor(_selectedElement!);
           }
 
           // row at the same level than the mouse
 
           if (x - 1 >= 0 && state[x - 1][y] == null) {
-            state[x - 1][y] = value;
+            state[x - 1][y] = (_selectedElement == null)
+                ? v
+                : getElementColor(_selectedElement!);
           }
 
-          state[x][y] = value;
+          state[x][y] = (_selectedElement == null)
+              ? v
+              : getElementColor(_selectedElement!);
 
           if (state.length > x + 1 && state[x + 1][y] == null) {
-            state[x + 1][y] = value;
+            state[x + 1][y] = (_selectedElement == null)
+                ? v
+                : getElementColor(_selectedElement!);
           }
 
           // row under the mouse
@@ -259,17 +330,23 @@ class _FallingSandState extends State<FallingSand>
           if (x - 1 >= 0 &&
               state[x - 1].length > y + 1 &&
               state[x - 1][y + 1] == null) {
-            state[x - 1][y + 1] = value;
+            state[x - 1][y + 1] = (_selectedElement == null)
+                ? v
+                : getElementColor(_selectedElement!);
           }
 
           if (state[x].length > y + 1 && state[x][y + 1] == null) {
-            state[x][y + 1] = value;
+            state[x][y + 1] = (_selectedElement == null)
+                ? v
+                : getElementColor(_selectedElement!);
           }
 
           if (state.length > x + 1 &&
               state[x + 1].length > y + 1 &&
               state[x + 1][y + 1] == null) {
-            state[x + 1][y + 1] = value;
+            state[x + 1][y + 1] = (_selectedElement == null)
+                ? v
+                : getElementColor(_selectedElement!);
           }
         });
     }
@@ -390,6 +467,13 @@ class _FallingSandState extends State<FallingSand>
           ),
         ),
         ColorOptions(onColor: (c) => setState(() => color = c)),
+        GroundActions(
+          onElementChanged: (selectedElement) {
+            setState(() {
+              _selectedElement = selectedElement;
+            });
+          },
+        ),
         Sandbox(
           state: state,
           size: size,
